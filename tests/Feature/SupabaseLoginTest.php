@@ -1,0 +1,150 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
+
+class SupabaseLoginTest extends TestCase
+{
+    private string $usersEndpoint = 'https://csfest-test.supabase.co/rest/v1/users';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'services.supabase.url' => 'https://csfest-test.supabase.co',
+            'services.supabase.key' => 'test-supabase-key',
+            'services.supabase.users_table' => 'users',
+            'services.supabase.admin_emails' => 'peserta@example.com',
+        ]);
+    }
+
+    public function test_landing_page_and_login_form_are_available(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Build a better campus')
+            ->assertSee('Innovating Integrated Digital Solutions for Better Campus Life');
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Masuk ke dashboard')
+            ->assertSee('name="email"', false)
+            ->assertSee('name="password"', false);
+    }
+
+    public function test_guest_is_redirected_to_login_before_accessing_the_dashboard(): void
+    {
+        $response = $this->get(route('dashboard'));
+
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_user_can_sign_in_using_a_user_record_from_supabase_and_view_the_dashboard(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
+                'id' => 'user-123',
+                'name' => 'Ayu Peserta',
+                'email' => 'peserta@example.com',
+                'password_hash' => Hash::make('secret-password'),
+                'role' => 'admin',
+            ]]),
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'peserta@example.com',
+            'password' => 'secret-password',
+        ]);
+
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHas('app_user', [
+            'id' => 'user-123',
+            'name' => 'Ayu Peserta',
+            'email' => 'peserta@example.com',
+            'role' => 'admin',
+        ]);
+
+        Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), $this->usersEndpoint)
+            && $request->method() === 'GET'
+            && $request->hasHeader('apikey', 'test-supabase-key')
+            && $request->hasHeader('Authorization', 'Bearer test-supabase-key'));
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Ayu Peserta')
+            ->assertSee('Innovating Integrated Digital Solutions for Better Campus Life');
+    }
+
+    public function test_invalid_supabase_credentials_return_to_login_with_an_error(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
+                'id' => 'user-123',
+                'name' => 'Ayu Peserta',
+                'email' => 'peserta@example.com',
+                'password_hash' => Hash::make('different-password'),
+            ]]),
+        ]);
+
+        $response = $this->from(route('login'))->post(route('login.store'), [
+            'email' => 'peserta@example.com',
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email' => 'Email atau kata sandi tidak sesuai.']);
+        $response->assertSessionMissing('app_user');
+    }
+
+    public function test_logout_clears_the_supabase_session(): void
+    {
+        $response = $this->withSession([
+            'app_user' => [
+                'id' => 'user-123',
+                'name' => 'Ayu Peserta',
+                'email' => 'peserta@example.com',
+            ],
+        ])->post(route('logout'));
+
+        $response->assertRedirect(route('home'));
+        $response->assertSessionMissing('app_user');
+        $this->get(route('dashboard'))->assertRedirect(route('login'));
+    }
+
+    public function test_login_requires_a_valid_email_and_password(): void
+    {
+        Http::preventStrayRequests();
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'bukan-email',
+            'password' => '',
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'password']);
+    }
+
+    public function test_login_reports_missing_supabase_configuration(): void
+    {
+        config([
+            'services.supabase.url' => null,
+            'services.supabase.key' => null,
+        ]);
+        Log::spy();
+
+        $response = $this->from(route('login'))->post(route('login.store'), [
+            'email' => 'peserta@example.com',
+            'password' => 'secret-password',
+        ]);
+
+        $response->assertSessionHasErrors(['email' => 'Database login belum dikonfigurasi. Silakan hubungi panitia.']);
+        Log::shouldHaveReceived('error')->once();
+    }
+}
