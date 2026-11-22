@@ -14,6 +14,10 @@
         </a>
         <nav class="nav-links" aria-label="Navigasi utama">
             <a href="{{ route('home') }}">Beranda</a>
+            <button class="button button-outline button-small theme-toggle" type="button" data-theme-toggle aria-pressed="false">
+                <span aria-hidden="true" data-theme-icon>☾</span>
+                <span data-theme-label>Mode malam</span>
+            </button>
             <a class="button button-small" href="{{ route('login') }}">Masuk</a>
         </nav>
     </header>

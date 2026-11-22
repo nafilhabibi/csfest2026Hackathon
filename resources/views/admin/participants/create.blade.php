@@ -15,6 +15,10 @@
         </a>
         <nav class="nav-links" aria-label="Navigasi admin">
             <a href="{{ route('dashboard') }}">Dashboard</a>
+            <button class="button button-outline button-small theme-toggle" type="button" data-theme-toggle aria-pressed="false">
+                <span aria-hidden="true" data-theme-icon>☾</span>
+                <span data-theme-label>Mode malam</span>
+            </button>
             <form class="logout-form" method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="button button-outline button-small" type="submit">Keluar</button>
@@ -31,9 +35,9 @@
             </div>
         </div>
 
-        <section class="dashboard-card" style="max-width: 620px; padding: 28px;">
+        <section class="dashboard-card admin-form-card">
             @if (session('status'))
-                <div class="form-alert" role="status" style="margin: 0 0 20px; background: #edf7f0; border-color: #bfe3ca; color: #35784d;">
+                <div class="form-alert form-alert-success" role="status">
                     {{ session('status') }}
                 </div>
             @endif

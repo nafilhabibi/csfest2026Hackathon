@@ -15,6 +15,10 @@
         </a>
         <nav class="nav-links" aria-label="Navigasi utama">
             <a href="{{ route('dashboard') }}">Dashboard</a>
+            <button class="button button-outline button-small theme-toggle" type="button" data-theme-toggle aria-pressed="false">
+                <span aria-hidden="true" data-theme-icon>☾</span>
+                <span data-theme-label>Mode malam</span>
+            </button>
             <form class="logout-form" method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="button button-outline button-small" type="submit">Keluar</button>
