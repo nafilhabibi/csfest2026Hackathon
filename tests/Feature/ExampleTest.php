@@ -16,4 +16,17 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_secure_forwarded_requests_generate_https_asset_and_navigation_urls(): void
+    {
+        $response = $this->get('/', [
+            'X-Forwarded-Proto' => 'https',
+        ]);
+
+        $response->assertOk()
+            ->assertSee('rel="stylesheet" href="https://', false)
+            ->assertSee('type="module" src="https://', false)
+            ->assertSee('href="https://', false)
+            ->assertDontSee('http://', false);
+    }
 }
