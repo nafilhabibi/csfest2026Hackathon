@@ -24,21 +24,23 @@ class SupabaseUserSeederTest extends TestCase
     {
         Http::preventStrayRequests();
         Http::fake([
-            'csfest-test.supabase.co/rest/v1/users' => Http::response([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([
                 'id' => 'user-123',
-                'email' => 'peserta@example.com',
+                'login_name' => 'panitia csfest2026',
             ], 201),
         ]);
 
         $this->seed(SupabaseUserSeeder::class);
 
-        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://csfest-test.supabase.co/rest/v1/users'
+        Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://csfest-test.supabase.co/rest/v1/users')
             && $request->method() === 'POST'
+            && str_contains($request->url(), 'on_conflict=login_name')
             && $request->hasHeader('apikey', 'test-supabase-key')
             && $request->hasHeader('Authorization', 'Bearer test-supabase-key')
             && $request->hasHeader('Prefer', 'resolution=merge-duplicates')
-            && $request['email'] === 'peserta@example.com'
-            && $request['name'] === 'Ayu Peserta'
+            && $request['login_name'] === 'panitia csfest2026'
+            && $request['name'] === 'Panitia CSFEST2026'
+            && ! array_key_exists('email', $request->data())
             && is_string($request['password'])
             && str_starts_with($request['password'], '$2'));
     }

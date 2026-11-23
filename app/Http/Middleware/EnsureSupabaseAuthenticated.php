@@ -17,7 +17,9 @@ class EnsureSupabaseAuthenticated
     {
         $user = $request->session()->get('app_user');
 
-        if (! is_array($user) || ! is_string($user['email'] ?? null)) {
+        if (! is_array($user)
+            || (! is_string($user['id'] ?? null) && ! is_int($user['id'] ?? null))
+            || ! is_string($user['name'] ?? null)) {
             $request->session()->forget('app_user');
 
             return redirect()->route('login');

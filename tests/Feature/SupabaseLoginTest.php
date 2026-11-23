@@ -20,7 +20,6 @@ class SupabaseLoginTest extends TestCase
             'services.supabase.url' => 'https://csfest-test.supabase.co',
             'services.supabase.key' => 'test-supabase-key',
             'services.supabase.users_table' => 'users',
-            'services.supabase.admin_emails' => 'peserta@example.com',
         ]);
     }
 
@@ -34,7 +33,8 @@ class SupabaseLoginTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Masuk ke dashboard')
-            ->assertSee('name="email"', false)
+            ->assertSee('name="team_name"', false)
+            ->assertDontSee('name="email"', false)
             ->assertSee('name="password"', false);
     }
 
@@ -51,34 +51,34 @@ class SupabaseLoginTest extends TestCase
         Http::fake([
             'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
                 'id' => 'user-123',
-                'name' => 'Ayu Peserta',
-                'email' => 'peserta@example.com',
+                'name' => 'Tim Peserta',
+                'login_name' => 'tim peserta',
                 'password_hash' => Hash::make('secret-password'),
                 'role' => 'admin',
             ]]),
         ]);
 
         $response = $this->post(route('login.store'), [
-            'email' => 'peserta@example.com',
+            'team_name' => 'Tim Peserta',
             'password' => 'secret-password',
         ]);
 
         $response->assertRedirect(route('dashboard'));
         $response->assertSessionHas('app_user', [
             'id' => 'user-123',
-            'name' => 'Ayu Peserta',
-            'email' => 'peserta@example.com',
+            'name' => 'Tim Peserta',
             'role' => 'admin',
         ]);
 
         Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), $this->usersEndpoint)
             && $request->method() === 'GET'
+            && str_contains($request->url(), 'login_name=eq.')
             && $request->hasHeader('apikey', 'test-supabase-key')
             && $request->hasHeader('Authorization', 'Bearer test-supabase-key'));
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Ayu Peserta')
+            ->assertSee('Tim Peserta')
             ->assertSee('Innovating Integrated Digital Solutions for Better Campus Life');
     }
 
@@ -88,19 +88,19 @@ class SupabaseLoginTest extends TestCase
         Http::fake([
             'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
                 'id' => 'user-123',
-                'name' => 'Ayu Peserta',
-                'email' => 'peserta@example.com',
+                'name' => 'Tim Peserta',
+                'login_name' => 'tim peserta',
                 'password_hash' => Hash::make('different-password'),
             ]]),
         ]);
 
         $response = $this->from(route('login'))->post(route('login.store'), [
-            'email' => 'peserta@example.com',
+            'team_name' => 'Tim Peserta',
             'password' => 'wrong-password',
         ]);
 
         $response->assertRedirect(route('login'));
-        $response->assertSessionHasErrors(['email' => 'Email atau kata sandi tidak sesuai.']);
+        $response->assertSessionHasErrors(['team_name' => 'Nama tim atau kata sandi tidak sesuai.']);
         $response->assertSessionMissing('app_user');
     }
 
@@ -109,8 +109,7 @@ class SupabaseLoginTest extends TestCase
         $response = $this->withSession([
             'app_user' => [
                 'id' => 'user-123',
-                'name' => 'Ayu Peserta',
-                'email' => 'peserta@example.com',
+                'name' => 'Tim Peserta',
             ],
         ])->post(route('logout'));
 
@@ -119,16 +118,16 @@ class SupabaseLoginTest extends TestCase
         $this->get(route('dashboard'))->assertRedirect(route('login'));
     }
 
-    public function test_login_requires_a_valid_email_and_password(): void
+    public function test_login_requires_a_team_name_and_password(): void
     {
         Http::preventStrayRequests();
 
         $response = $this->post(route('login.store'), [
-            'email' => 'bukan-email',
+            'team_name' => '',
             'password' => '',
         ]);
 
-        $response->assertSessionHasErrors(['email', 'password']);
+        $response->assertSessionHasErrors(['team_name', 'password']);
     }
 
     public function test_login_reports_missing_supabase_configuration(): void
@@ -140,11 +139,47 @@ class SupabaseLoginTest extends TestCase
         Log::spy();
 
         $response = $this->from(route('login'))->post(route('login.store'), [
-            'email' => 'peserta@example.com',
+            'team_name' => 'Tim Peserta',
             'password' => 'secret-password',
         ]);
 
-        $response->assertSessionHasErrors(['email' => 'Database login belum dikonfigurasi. Silakan hubungi panitia.']);
+        $response->assertSessionHasErrors(['team_name' => 'Database login belum dikonfigurasi. Silakan hubungi panitia.']);
         Log::shouldHaveReceived('error')->once();
+    }
+
+    public function test_participant_sees_the_latest_assigned_study_case_on_the_dashboard(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => function (Request $request) {
+                if (str_contains($request->url(), 'theme')) {
+                    return Http::response([[
+                        'theme' => [
+                            'id' => 7,
+                            'title' => 'Aksesibilitas Kampus',
+                            'description' => 'Studi kasus layanan kampus.',
+                        ],
+                    ]]);
+                }
+
+                return Http::response([[
+                    'id' => 'team-123',
+                    'name' => 'Tim Akses',
+                    'login_name' => 'tim akses',
+                    'password_hash' => Hash::make('secret-password'),
+                    'role' => 'participant',
+                ]]);
+            },
+        ]);
+
+        $this->post(route('login.store'), [
+            'team_name' => 'Tim Akses',
+            'password' => 'secret-password',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Aksesibilitas Kampus')
+            ->assertSee('Studi kasus layanan kampus.');
     }
 }

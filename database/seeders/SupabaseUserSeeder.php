@@ -27,12 +27,11 @@ class SupabaseUserSeeder extends Seeder
             ])
             ->connectTimeout(3)
             ->timeout(10)
-            ->post(rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable), [
-                'name' => 'Ayu Peserta',
-                'email' => 'peserta@example.com',
+            ->post(rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable).'?on_conflict=login_name', [
+                'name' => 'Panitia CSFEST2026',
+                'login_name' => 'panitia csfest2026',
                 'password' => Hash::make('password123'),
                 'role' => 'admin',
-                'email_verified_at' => now()->utc()->toISOString(),
             ]);
 
         if (! $response->successful()) {
@@ -42,7 +41,7 @@ class SupabaseUserSeeder extends Seeder
         }
 
         $this->command?->info('Akun demo Supabase berhasil disiapkan.');
-        $this->command?->line('Email: peserta@example.com');
+        $this->command?->line('Nama tim: Panitia CSFEST2026');
         $this->command?->line('Kata sandi: password123');
     }
 }

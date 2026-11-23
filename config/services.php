@@ -39,7 +39,6 @@ return [
         'url' => env('SUPABASE_URL'),
         'key' => env('SUPABASE_SECRET_KEY', env('SUPABASE_ANON_KEY', env('SUPABASE_PUBLISHABLE_KEY'))),
         'users_table' => env('SUPABASE_USERS_TABLE', 'users'),
-        'admin_emails' => env('SUPABASE_ADMIN_EMAILS', ''),
     ],
 
 ];

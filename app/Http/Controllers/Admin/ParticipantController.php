@@ -3,77 +3,164 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\SupabaseRestClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ParticipantController extends Controller
 {
-    public function create(Request $request): View
+    public function __construct(private SupabaseRestClient $supabase) {}
+
+    public function create(): View
     {
-        return view('admin.participants.create');
+        $participants = [];
+        $themes = [];
+        $dataError = null;
+
+        if (! $this->supabase->isConfigured()) {
+            Log::error('Cannot load participant management because Supabase configuration is missing.');
+            $dataError = 'Konfigurasi database belum lengkap.';
+
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+        }
+
+        try {
+            $participantsResponse = $this->supabase->request()->get(
+                $this->supabase->endpoint($this->supabase->usersTable()),
+                [
+                    'select' => 'id,name,theme_id,theme:themes(id,title)',
+                    'role' => 'eq.participant',
+                    'order' => 'name.asc',
+                ]
+            );
+            $themesResponse = $this->supabase->request()->get(
+                $this->supabase->endpoint($this->supabase->themesTable()),
+                [
+                    'select' => 'id,title,description',
+                    'order' => 'title.asc',
+                ]
+            );
+        } catch (ConnectionException $exception) {
+            Log::warning('Unable to connect to Supabase while loading participant management.', [
+                'exception' => $exception::class,
+            ]);
+            $dataError = 'Layanan database sedang tidak dapat dijangkau.';
+
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+        }
+
+        $participantRows = $participantsResponse->json();
+        $themeRows = $themesResponse->json();
+
+        if (! $participantsResponse->successful() || ! is_array($participantRows)
+            || ! $themesResponse->successful() || ! is_array($themeRows)) {
+            Log::warning('Supabase returned an unsuccessful response while loading participant management.', [
+                'participants_status' => $participantsResponse->status(),
+                'themes_status' => $themesResponse->status(),
+            ]);
+            $dataError = 'Data tim dan studi kasus belum dapat dimuat. Silakan coba lagi.';
+
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+        }
+
+        $participants = $participantRows;
+        $themes = $themeRows;
+
+        return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed', 'max:1024'],
+            'theme_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $url = config('services.supabase.url');
-        $key = config('services.supabase.key');
-        $usersTable = config('services.supabase.users_table', 'users');
-
-        if (! is_string($url) || $url === '' || ! is_string($key) || $key === '' || ! is_string($usersTable) || $usersTable === '') {
+        if (! $this->supabase->isConfigured()) {
             Log::error('Cannot create a participant because Supabase configuration is missing.');
 
             return back()->withErrors([
-                'email' => 'Konfigurasi database belum lengkap.',
+                'name' => 'Konfigurasi database belum lengkap.',
             ]);
         }
 
-        $endpoint = rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable);
-        $headers = [
-            'apikey' => $key,
-            'Authorization' => 'Bearer '.$key,
-        ];
+        $teamName = trim($data['name']);
+        $loginName = mb_strtolower($teamName);
+        $usersEndpoint = $this->supabase->endpoint($this->supabase->usersTable());
 
         try {
-            $existing = Http::acceptJson()
-                ->withHeaders($headers)
-                ->connectTimeout(3)
-                ->timeout(10)
-                ->get($endpoint, [
-                    'select' => 'id',
-                    'email' => 'eq.'.strtolower($data['email']),
-                    'limit' => 1,
+            $existing = $this->supabase->request()->get($usersEndpoint, [
+                'select' => 'id',
+                'login_name' => 'eq.'.$loginName,
+                'limit' => 1,
+            ]);
+
+            if (! $existing->successful()) {
+                Log::warning('Supabase could not check for a duplicate participant team name.', [
+                    'status' => $existing->status(),
                 ]);
 
-            if ($existing->successful() && count($existing->json()) > 0) {
                 return back()->withErrors([
-                    'email' => 'Email sudah terdaftar sebagai akun peserta.',
-                ])->withInput();
+                    'name' => 'Nama tim belum dapat diverifikasi. Silakan coba lagi.',
+                ])->withInput($request->except(['password', 'password_confirmation']));
             }
 
-            $created = Http::acceptJson()
-                ->withHeaders([
-                    ...$headers,
-                    'Prefer' => 'return=representation',
-                ])
-                ->connectTimeout(3)
-                ->timeout(10)
-                ->post($endpoint, [
-                    'name' => trim($data['name']),
-                    'email' => strtolower(trim($data['email'])),
+            $existingUsers = $existing->json();
+            if (! is_array($existingUsers)) {
+                Log::warning('Supabase returned an invalid response while checking a participant team name.');
+
+                return back()->withErrors([
+                    'name' => 'Nama tim belum dapat diverifikasi. Silakan coba lagi.',
+                ])->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            if (count($existingUsers) > 0) {
+                return back()->withErrors([
+                    'name' => 'Nama tim sudah digunakan.',
+                ])->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            if (isset($data['theme_id'])) {
+                $theme = $this->supabase->request()->get(
+                    $this->supabase->endpoint($this->supabase->themesTable()),
+                    [
+                        'select' => 'id',
+                        'id' => 'eq.'.$data['theme_id'],
+                        'limit' => 1,
+                    ]
+                );
+
+                $themeRows = $theme->json();
+                if (! $theme->successful() || ! is_array($themeRows)) {
+                    Log::warning('Supabase could not validate the study case for a new participant.', [
+                        'status' => $theme->status(),
+                    ]);
+
+                    return back()->withErrors([
+                        'theme_id' => 'Studi kasus belum dapat diverifikasi. Silakan coba lagi.',
+                    ])->withInput($request->except(['password', 'password_confirmation']));
+                }
+
+                if (count($themeRows) === 0) {
+                    return back()->withErrors([
+                        'theme_id' => 'Studi kasus yang dipilih tidak tersedia.',
+                    ])->withInput($request->except(['password', 'password_confirmation']));
+                }
+            }
+
+            $created = $this->supabase->request()
+                ->withHeaders(['Prefer' => 'return=representation'])
+                ->post($usersEndpoint, [
+                    'name' => $teamName,
+                    'login_name' => $loginName,
                     'password' => Hash::make($data['password']),
                     'role' => 'participant',
-                    'email_verified_at' => now()->utc()->toISOString(),
+                    'theme_id' => isset($data['theme_id']) ? (int) $data['theme_id'] : null,
                 ]);
         } catch (ConnectionException $exception) {
             Log::warning('Unable to connect to Supabase while creating a participant.', [
@@ -81,8 +168,8 @@ class ParticipantController extends Controller
             ]);
 
             return back()->withErrors([
-                'email' => 'Layanan database sedang tidak dapat dijangkau.',
-            ])->withInput();
+                'name' => 'Layanan database sedang tidak dapat dijangkau.',
+            ])->withInput($request->except(['password', 'password_confirmation']));
         }
 
         if (! $created->successful()) {
@@ -91,13 +178,99 @@ class ParticipantController extends Controller
             ]);
 
             return back()->withErrors([
-                'email' => 'Akun peserta belum berhasil dibuat. Silakan coba lagi.',
-            ])->withInput();
+                'name' => $created->status() === 409
+                    ? 'Nama tim sudah digunakan.'
+                    : 'Akun tim belum berhasil dibuat. Silakan coba lagi.',
+            ])->withInput($request->except(['password', 'password_confirmation']));
         }
 
         return redirect()->route('admin.participants.create')->with(
             'status',
-            'Akun peserta berhasil dibuat untuk '.$data['email'].'.'
+            'Akun tim '.$teamName.' berhasil dibuat.'
+        );
+    }
+
+    public function updateTheme(Request $request, string $participant): RedirectResponse
+    {
+        $data = $request->validate([
+            'theme_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        if (! $this->supabase->isConfigured()) {
+            Log::error('Cannot update a participant theme because Supabase configuration is missing.');
+
+            return back()->withErrors([
+                'theme_id' => 'Konfigurasi database belum lengkap.',
+            ]);
+        }
+
+        try {
+            if (isset($data['theme_id'])) {
+                $theme = $this->supabase->request()->get(
+                    $this->supabase->endpoint($this->supabase->themesTable()),
+                    [
+                        'select' => 'id',
+                        'id' => 'eq.'.$data['theme_id'],
+                        'limit' => 1,
+                    ]
+                );
+
+                $themeRows = $theme->json();
+                if (! $theme->successful() || ! is_array($themeRows)) {
+                    Log::warning('Supabase could not validate a study case assignment.', [
+                        'status' => $theme->status(),
+                    ]);
+
+                    return back()->withErrors([
+                        'theme_id' => 'Studi kasus belum dapat diverifikasi. Silakan coba lagi.',
+                    ]);
+                }
+
+                if (count($themeRows) === 0) {
+                    return back()->withErrors([
+                        'theme_id' => 'Studi kasus yang dipilih tidak tersedia.',
+                    ]);
+                }
+            }
+
+            $updated = $this->supabase->request()
+                ->withHeaders(['Prefer' => 'return=representation'])
+                ->patch($this->supabase->endpoint($this->supabase->usersTable()).'?'.http_build_query([
+                    'id' => 'eq.'.$participant,
+                    'role' => 'eq.participant',
+                ]), [
+                    'theme_id' => isset($data['theme_id']) ? (int) $data['theme_id'] : null,
+                ]);
+        } catch (ConnectionException $exception) {
+            Log::warning('Unable to connect to Supabase while assigning a participant theme.', [
+                'exception' => $exception::class,
+            ]);
+
+            return back()->withErrors([
+                'theme_id' => 'Layanan database sedang tidak dapat dijangkau.',
+            ]);
+        }
+
+        $updatedParticipants = $updated->json();
+        if (! $updated->successful() || ! is_array($updatedParticipants)) {
+            Log::warning('Supabase rejected a participant theme assignment.', [
+                'status' => $updated->status(),
+            ]);
+
+            return back()->withErrors([
+                'theme_id' => 'Studi kasus tim belum berhasil diperbarui. Silakan coba lagi.',
+            ]);
+        }
+
+        if (count($updatedParticipants) === 0) {
+            return back()->withErrors([
+                'theme_id' => 'Tim tidak ditemukan.',
+            ]);
+        }
+
+        return redirect()->route('admin.participants.create')->with(
+            'status',
+            'Studi kasus berhasil diperbarui untuk tim '.$updatedParticipants[0]['name'].'.'
         );
     }
 }

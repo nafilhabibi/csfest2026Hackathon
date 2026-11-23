@@ -25,7 +25,7 @@ class SupabaseLoginController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
+            'team_name' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:1024'],
         ]);
 
@@ -37,8 +37,8 @@ class SupabaseLoginController extends Controller
             Log::error('Database login is unavailable because its Supabase configuration is missing.');
 
             return back()->withErrors([
-                'email' => 'Database login belum dikonfigurasi. Silakan hubungi panitia.',
-            ])->onlyInput('email');
+                'team_name' => 'Database login belum dikonfigurasi. Silakan hubungi panitia.',
+            ])->onlyInput('team_name');
         }
 
         try {
@@ -51,7 +51,7 @@ class SupabaseLoginController extends Controller
                 ->timeout(10)
                 ->get(rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable), [
                     'select' => '*',
-                    'email' => 'eq.'.strtolower($credentials['email']),
+                    'login_name' => 'eq.'.mb_strtolower(trim($credentials['team_name'])),
                     'limit' => 1,
                 ]);
         } catch (ConnectionException $exception) {
@@ -60,8 +60,8 @@ class SupabaseLoginController extends Controller
             ]);
 
             return back()->withErrors([
-                'email' => 'Layanan login sedang tidak dapat dijangkau. Coba lagi beberapa saat.',
-            ])->onlyInput('email');
+                'team_name' => 'Layanan login sedang tidak dapat dijangkau. Coba lagi beberapa saat.',
+            ])->onlyInput('team_name');
         }
 
         if (! $response->successful()) {
@@ -70,8 +70,8 @@ class SupabaseLoginController extends Controller
             ]);
 
             return back()->withErrors([
-                'email' => 'Login belum berhasil. Silakan coba lagi.',
-            ])->onlyInput('email');
+                'team_name' => 'Login belum berhasil. Silakan coba lagi.',
+            ])->onlyInput('team_name');
         }
 
         $users = $response->json();
@@ -79,26 +79,23 @@ class SupabaseLoginController extends Controller
         $passwordHash = is_array($user)
             ? ($user['password_hash'] ?? $user['password'] ?? null)
             : null;
+        $userId = is_array($user) ? ($user['id'] ?? null) : null;
 
         if (! is_array($user)
-            || ! is_string($user['email'] ?? null)
+            || (! is_string($userId) && ! is_int($userId))
+            || ! is_string($user['name'] ?? null)
+            || trim($user['name']) === ''
             || ! is_string($passwordHash)
             || ! Hash::check($credentials['password'], $passwordHash)) {
             return back()->withErrors([
-                'email' => 'Email atau kata sandi tidak sesuai.',
-            ])->onlyInput('email');
-        }
-
-        $name = $user['name'] ?? $user['full_name'] ?? $user['email'];
-        if (! is_string($name) || $name === '') {
-            $name = $user['email'];
+                'team_name' => 'Nama tim atau kata sandi tidak sesuai.',
+            ])->onlyInput('team_name');
         }
 
         $request->session()->regenerate();
         $request->session()->put('app_user', [
-            'id' => isset($user['id']) && (is_string($user['id']) || is_int($user['id'])) ? $user['id'] : null,
-            'name' => $name,
-            'email' => $user['email'],
+            'id' => $userId,
+            'name' => $user['name'],
             'role' => $this->resolveRole($user),
         ]);
 
@@ -111,17 +108,8 @@ class SupabaseLoginController extends Controller
     private function resolveRole(array $user): string
     {
         $role = $user['role'] ?? null;
-        if ($role === 'admin' || $role === 'participant') {
-            return $role;
-        }
 
-        $adminEmails = collect(preg_split('/[,;]/', (string) config('services.supabase.admin_emails', ''), -1, PREG_SPLIT_NO_EMPTY))
-            ->map(fn (string $email): string => strtolower(trim($email)))
-            ->filter();
-
-        return $adminEmails->contains(strtolower((string) ($user['email'] ?? '')))
-            ? 'admin'
-            : 'participant';
+        return $role === 'admin' ? 'admin' : 'participant';
     }
 
     public function logout(Request $request): RedirectResponse

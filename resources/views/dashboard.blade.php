@@ -3,7 +3,6 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    @php($user = session('app_user', []))
     <div class="announcement">
         <span class="announcement-tag">CSFEST2026</span>
         <span>Campus Solution Fest · Portal peserta</span>
@@ -31,7 +30,7 @@
             <div>
                 <p class="eyebrow"><span class="eyebrow-mark"></span> Portal peserta</p>
                 <h1 class="dashboard-greeting">Halo, {{ $user['name'] ?? 'Peserta' }}.</h1>
-                <p class="dashboard-subtitle">Senang melihatmu kembali di CSFEST2026.</p>
+                <p class="dashboard-subtitle">Akun bersama untuk timmu di CSFEST2026.</p>
             </div>
         </div>
 
@@ -48,7 +47,7 @@
             <aside class="dashboard-card profile-card">
                 <div class="profile-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($user['name'] ?? 'P', 0, 1)) }}</div>
                 <h2>{{ $user['name'] ?? 'Peserta' }}</h2>
-                <p>{{ $user['email'] ?? '' }}</p>
+                <p>{{ ($user['role'] ?? null) === 'admin' ? 'Panitia CSFEST2026' : 'Akun tim peserta' }}</p>
                 <span class="profile-status">Akun terhubung</span>
                 @if (($user['role'] ?? null) === 'admin')
                     <a class="button button-small" style="width: 100%; margin-top: 18px;" href="{{ route('admin.participants.create') }}">
@@ -57,6 +56,25 @@
                 @endif
             </aside>
         </div>
+
+        @if (($user['role'] ?? null) === 'participant')
+            <section class="dashboard-card case-card">
+                <div>
+                    <span class="eyebrow"><span class="eyebrow-mark"></span> Studi kasus tim</span>
+                    @if ($themeError)
+                        <p class="form-alert" role="alert">{{ $themeError }}</p>
+                    @elseif ($theme)
+                        <h2>{{ $theme['title'] }}</h2>
+                        @if (filled($theme['description'] ?? null))
+                            <p>{{ $theme['description'] }}</p>
+                        @endif
+                    @else
+                        <h2>Belum ada tema yang ditetapkan</h2>
+                        <p>Panitia akan menetapkan studi kasus untuk timmu. Silakan periksa kembali nanti.</p>
+                    @endif
+                </div>
+            </section>
+        @endif
 
         <div class="dashboard-bottom">
             <section class="dashboard-card dashboard-mini">

@@ -36,7 +36,7 @@
             <div class="auth-form">
                 <span class="eyebrow"><span class="eyebrow-mark"></span> Portal peserta</span>
                 <h2>Selamat datang</h2>
-                <p class="auth-form-intro">Masuk menggunakan akun yang terdaftar untuk mengakses dashboard CSFEST2026.</p>
+                <p class="auth-form-intro">Masuk menggunakan nama tim dan kata sandi untuk mengakses dashboard CSFEST2026.</p>
 
                 @if ($errors->any())
                     <div class="form-alert" role="alert">
@@ -47,18 +47,18 @@
                 <form method="POST" action="{{ route('login.store') }}">
                     @csrf
                     <div class="form-field">
-                        <label for="email">Email</label>
+                        <label for="team_name">Nama tim</label>
                         <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value="{{ old('email') }}"
-                            placeholder="nama@email.com"
-                            autocomplete="email"
+                            id="team_name"
+                            name="team_name"
+                            type="text"
+                            value="{{ old('team_name') }}"
+                            placeholder="Masukkan nama tim"
+                            autocomplete="username"
                             required
                             autofocus
                         >
-                        @error('email')
+                        @error('team_name')
                             <p class="form-error">{{ $message }}</p>
                         @enderror
                     </div>
