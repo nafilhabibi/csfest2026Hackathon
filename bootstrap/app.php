@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureSupabaseAdmin;
 use App\Http\Middleware\EnsureSupabaseAuthenticated;
+use App\Http\Middleware\EnsureSupabaseParticipant;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supabase.auth' => EnsureSupabaseAuthenticated::class,
             'supabase.admin' => EnsureSupabaseAdmin::class,
+            'supabase.participant' => EnsureSupabaseParticipant::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

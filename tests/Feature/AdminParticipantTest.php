@@ -60,7 +60,34 @@ class AdminParticipantTest extends TestCase
             ->assertOk()
             ->assertSee('Tim Merah')
             ->assertSee('Kualitas Air')
-            ->assertSee('Nama tim menjadi identitas login.');
+            ->assertSee('Nama tim menjadi identitas login')
+            ->assertSee('Pusat pengelolaan')
+            ->assertSee('href="#team-account"', false)
+            ->assertSee('href="#study-cases"', false)
+            ->assertSee('href="#team-assignments"', false)
+            ->assertSee('Belum mendapat tema');
+    }
+
+    public function test_admin_management_does_not_show_empty_counts_when_data_cannot_load(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([], 500),
+            'csfest-test.supabase.co/rest/v1/themes*' => Http::response([], 500),
+        ]);
+
+        $this->withSession([
+            'app_user' => [
+                'id' => 1,
+                'name' => 'Admin',
+                'role' => 'admin',
+            ],
+        ])->get(route('admin.participants.create'))
+            ->assertOk()
+            ->assertSee('Data tidak tersedia')
+            ->assertSee('Data studi kasus belum dapat ditampilkan.')
+            ->assertSee('Data tim belum dapat ditampilkan.')
+            ->assertSee('Belum mendapat tema');
     }
 
     public function test_admin_can_create_a_team_account_without_email(): void

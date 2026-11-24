@@ -3,29 +3,31 @@
 @section('title', 'Kelola tim dan studi kasus')
 
 @section('content')
-    <div class="announcement">
-        <span class="announcement-tag">ADMIN</span>
-        <span>Kelola akun tim dan studi kasus CSFEST2026</span>
-    </div>
-
-    <header class="site-header">
+    <header class="site-header dashboard-site-header portal-site-header">
         <a class="brand" href="{{ route('dashboard') }}" aria-label="CSFEST2026 Dashboard">
             CSFEST<span>2026</span>
         </a>
         <nav class="nav-links" aria-label="Navigasi admin">
-            <a href="{{ route('dashboard') }}">Dashboard</a>
+            <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
+            <a class="dashboard-nav-link dashboard-nav-link-active" href="{{ route('admin.participants.create') }}" aria-current="page">Pusat pengelolaan</a>
+        </nav>
+        <div class="dashboard-nav-actions">
+            <span class="dashboard-nav-user">
+                <span class="dashboard-nav-avatar" aria-hidden="true">A</span>
+                <span>Panitia</span>
+            </span>
             <button class="button button-outline button-small theme-toggle" type="button" data-theme-toggle aria-pressed="false">
                 <span aria-hidden="true" data-theme-icon>☾</span>
-                <span data-theme-label>Mode malam</span>
+                <span class="dashboard-theme-label" data-theme-label>Mode malam</span>
             </button>
             <form class="logout-form" method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="button button-outline button-small" type="submit">Keluar</button>
             </form>
-        </nav>
+        </div>
     </header>
 
-    <main class="dashboard-page">
+    <main class="dashboard-page admin-page">
         <div class="dashboard-top">
             <div>
                 <p class="eyebrow"><span class="eyebrow-mark"></span> Administrasi hackathon</p>
@@ -52,10 +54,51 @@
             </div>
         @endif
 
+        @php
+            $assignedTeamCount = count(array_filter(
+                $participants,
+                fn (array $participant): bool => is_array($participant['theme'] ?? null)
+            ));
+            $unassignedTeamCount = count($participants) - $assignedTeamCount;
+        @endphp
+
+        <section class="admin-overview" aria-label="Ringkasan pengelolaan">
+            <div class="admin-overview-heading">
+                <div>
+                    <span class="admin-overview-label">Pusat pengelolaan</span>
+                    <h2>Semua kebutuhan hackathon, dalam satu tempat.</h2>
+                </div>
+                <nav class="admin-quick-links" aria-label="Navigasi pengelolaan">
+                    <a href="#team-account">Akun tim <span aria-hidden="true">↓</span></a>
+                    <a href="#study-cases">Studi kasus <span aria-hidden="true">↓</span></a>
+                    <a href="#team-assignments">Penetapan tema <span aria-hidden="true">↓</span></a>
+                </nav>
+            </div>
+            <div class="admin-summary-grid">
+                <div class="admin-summary-card">
+                    <span>Tim terdaftar</span>
+                    <strong>{{ $dataError ? '—' : count($participants) }}</strong>
+                </div>
+                <div class="admin-summary-card">
+                    <span>Studi kasus</span>
+                    <strong>{{ $dataError ? '—' : count($themes) }}</strong>
+                </div>
+                <div class="admin-summary-card">
+                    <span>Belum mendapat tema</span>
+                    <strong>{{ $dataError ? '—' : $unassignedTeamCount }}</strong>
+                </div>
+            </div>
+        </section>
+
         <div class="management-grid">
-            <section class="dashboard-card admin-form-card">
-                <h2 class="management-heading">Buat akun tim</h2>
-                <p class="management-intro">Nama tim menjadi identitas login. Buat satu akun untuk seluruh anggota tim.</p>
+            <section class="dashboard-card admin-form-card" id="team-account">
+                <div class="management-card-heading">
+                    <span class="management-step">01</span>
+                    <div>
+                        <h2 class="management-heading">Buat akun tim</h2>
+                        <p class="management-intro">Nama tim menjadi identitas login untuk seluruh anggota.</p>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('admin.participants.store') }}">
                     @csrf
 
@@ -101,9 +144,14 @@
                 </form>
             </section>
 
-            <section class="dashboard-card management-card">
-                <h2 class="management-heading">Tambah studi kasus</h2>
-                <p class="management-intro">Daftar studi kasus ini dapat digunakan ulang untuk beberapa tim.</p>
+            <section class="dashboard-card management-card" id="study-cases">
+                <div class="management-card-heading">
+                    <span class="management-step">02</span>
+                    <div>
+                        <h2 class="management-heading">Tambah studi kasus</h2>
+                        <p class="management-intro">Satu studi kasus dapat digunakan oleh beberapa tim.</p>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('admin.themes.store') }}">
                     @csrf
 
@@ -133,9 +181,15 @@
         <section class="dashboard-card management-card management-section">
             <div class="management-section-heading">
                 <div>
-                    <h2 class="management-heading">Daftar studi kasus</h2>
-                    <p class="management-intro">Perbarui nama atau deskripsi tanpa menghapus penugasan tim.</p>
+                    <div class="management-card-heading">
+                        <span class="management-step">03</span>
+                        <div>
+                            <h2 class="management-heading">Daftar studi kasus</h2>
+                            <p class="management-intro">Perbarui nama atau deskripsi tanpa menghapus penugasan tim.</p>
+                        </div>
+                    </div>
                 </div>
+                <span class="section-count">{{ $dataError ? 'Data tidak tersedia' : count($themes).' studi kasus' }}</span>
             </div>
 
             @forelse ($themes as $theme)
@@ -153,16 +207,26 @@
                     <button class="button button-small" type="submit">Simpan perubahan</button>
                 </form>
             @empty
-                <p class="empty-state">Belum ada studi kasus. Tambahkan studi kasus terlebih dahulu.</p>
+                <p class="empty-state">
+                    {{ $dataError ? 'Data studi kasus belum dapat ditampilkan.' : 'Belum ada studi kasus. Tambahkan studi kasus terlebih dahulu.' }}
+                </p>
             @endforelse
         </section>
 
-        <section class="dashboard-card management-card management-section">
+        <section class="dashboard-card management-card management-section" id="team-assignments">
             <div class="management-section-heading">
                 <div>
-                    <h2 class="management-heading">Penetapan tema per tim</h2>
-                    <p class="management-intro">Tema yang sama dapat ditetapkan kepada lebih dari satu tim.</p>
+                    <div class="management-card-heading">
+                        <span class="management-step">04</span>
+                        <div>
+                            <h2 class="management-heading">Penetapan tema per tim</h2>
+                            <p class="management-intro">Tetapkan atau ubah studi kasus untuk setiap tim.</p>
+                        </div>
+                    </div>
                 </div>
+                <span class="section-count">
+                    {{ $dataError ? 'Data tidak tersedia' : $assignedTeamCount.' dari '.count($participants).' tim mendapat tema' }}
+                </span>
             </div>
 
             @if (count($participants) > 0)
@@ -171,10 +235,12 @@
                         <div class="team-row">
                             <div class="team-info">
                                 <strong>{{ $participant['name'] }}</strong>
-                                <span>
+                                <span class="{{ is_array($participant['theme'] ?? null) ? 'team-assigned' : 'team-unassigned' }}">
                                     @if (is_array($participant['theme'] ?? null))
+                                        <span class="team-status-dot" aria-hidden="true"></span>
                                         {{ $participant['theme']['title'] }}
                                     @else
+                                        <span class="team-status-dot" aria-hidden="true"></span>
                                         Belum ditetapkan
                                     @endif
                                 </span>
@@ -197,7 +263,9 @@
                     @endforeach
                 </div>
             @else
-                <p class="empty-state">Belum ada akun tim untuk ditetapkan ke studi kasus.</p>
+                <p class="empty-state">
+                    {{ $dataError ? 'Data tim belum dapat ditampilkan.' : 'Belum ada akun tim untuk ditetapkan ke studi kasus.' }}
+                </p>
             @endif
         </section>
     </main>

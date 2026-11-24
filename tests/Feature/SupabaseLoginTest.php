@@ -82,6 +82,43 @@ class SupabaseLoginTest extends TestCase
             ->assertSee('Innovating Integrated Digital Solutions for Better Campus Life');
     }
 
+    public function test_user_can_sign_in_by_team_name_when_supabase_has_not_been_migrated(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => function (Request $request) {
+                if (str_contains($request->url(), 'login_name=')) {
+                    return Http::response([
+                        'code' => '42703',
+                        'message' => 'column users.login_name does not exist',
+                    ], 400);
+                }
+
+                return Http::response([[
+                    'id' => 'team-123',
+                    'name' => 'Tim Lama',
+                    'password' => Hash::make('secret-password'),
+                    'role' => 'participant',
+                ]]);
+            },
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'team_name' => 'Tim Lama',
+            'password' => 'secret-password',
+        ]);
+
+        $response->assertRedirect(route('dashboard'))
+            ->assertSessionHas('app_user', [
+                'id' => 'team-123',
+                'name' => 'Tim Lama',
+                'role' => 'participant',
+            ]);
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'name=eq.Tim%20Lama')
+            && $request->method() === 'GET');
+    }
+
     public function test_invalid_supabase_credentials_return_to_login_with_an_error(): void
     {
         Http::preventStrayRequests();
@@ -147,6 +184,27 @@ class SupabaseLoginTest extends TestCase
         Log::shouldHaveReceived('error')->once();
     }
 
+    public function test_supabase_login_errors_are_logged_without_exposing_them_to_the_user(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([
+                'code' => 'PGRST204',
+                'message' => 'Could not find the login_name column in the schema cache.',
+            ], 400),
+        ]);
+        Log::spy();
+
+        $response = $this->from(route('login'))->post(route('login.store'), [
+            'team_name' => 'Tim Peserta',
+            'password' => 'secret-password',
+        ]);
+
+        $response->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['team_name' => 'Login belum berhasil. Silakan coba lagi.']);
+        Log::shouldHaveReceived('warning')->once();
+    }
+
     public function test_participant_sees_the_latest_assigned_study_case_on_the_dashboard(): void
     {
         Http::preventStrayRequests();
@@ -180,6 +238,11 @@ class SupabaseLoginTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Aksesibilitas Kampus')
-            ->assertSee('Studi kasus layanan kampus.');
+            ->assertSee('Studi kasus layanan kampus.')
+            ->assertSee('Akun tim peserta')
+            ->assertSee('Ruang kerja tim')
+            ->assertSee('Tema ditetapkan')
+            ->assertSee('Submission')
+            ->assertSee('href="'.route('submission.show').'"', false);
     }
 }

@@ -23,7 +23,7 @@
         </nav>
     </header>
 
-    <main>
+    <main class="landing-page">
         <section class="hero" id="tentang">
             <div class="hero-copy">
                 <span class="eyebrow"><span class="eyebrow-mark"></span> Campus Solution Fest · Hackathon 2026</span>

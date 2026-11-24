@@ -38,6 +38,8 @@ return [
     'supabase' => [
         'url' => env('SUPABASE_URL'),
         'key' => env('SUPABASE_SECRET_KEY', env('SUPABASE_ANON_KEY', env('SUPABASE_PUBLISHABLE_KEY'))),
+        'storage_key' => env('SUPABASE_SECRET_KEY', env('SUPABASE_SERVICE_ROLE_KEY')),
+        'submissions_bucket' => env('SUPABASE_SUBMISSIONS_BUCKET', 'Submission'),
         'users_table' => env('SUPABASE_USERS_TABLE', 'users'),
     ],
 

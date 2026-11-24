@@ -8,7 +8,7 @@
         <span>Temukan ide besar untuk kehidupan kampus yang lebih baik.</span>
     </div>
 
-    <header class="site-header">
+    <header class="site-header portal-site-header">
         <a class="brand" href="{{ route('home') }}" aria-label="CSFEST2026 Beranda">
             CSFEST<span>2026</span>
         </a>
@@ -22,7 +22,7 @@
         </nav>
     </header>
 
-    <main class="auth-shell">
+    <main class="auth-shell auth-page">
         <section class="auth-aside">
             <div class="auth-aside-copy">
                 <span class="eyebrow"><span class="eyebrow-mark"></span> Campus Solution Fest</span>
@@ -47,13 +47,13 @@
                 <form method="POST" action="{{ route('login.store') }}">
                     @csrf
                     <div class="form-field">
-                        <label for="team_name">Nama tim</label>
+                        <label for="team_name">Username</label>
                         <input
                             id="team_name"
                             name="team_name"
                             type="text"
                             value="{{ old('team_name') }}"
-                            placeholder="Masukkan nama tim"
+                            placeholder="Masukkan username"
                             autocomplete="username"
                             required
                             autofocus

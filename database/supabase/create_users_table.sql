@@ -1,3 +1,5 @@
+begin;
+
 create table if not exists public.users (
     id uuid primary key default gen_random_uuid(),
     name text not null,
@@ -18,6 +20,19 @@ alter table public.users
 update public.users
 set login_name = lower(trim(name))
 where login_name is null or btrim(login_name) = '';
+
+do $$
+begin
+    if exists (
+        select lower(login_name)
+        from public.users
+        group by lower(login_name)
+        having count(*) > 1
+    ) then
+        raise exception 'Cannot create unique team login names: duplicate names exist in public.users. Rename the duplicate teams, then rerun this script.';
+    end if;
+end;
+$$;
 
 alter table public.users
     alter column login_name set not null,
@@ -79,3 +94,22 @@ create trigger set_users_updated_at
 before update on public.users
 for each row
 execute function public.set_users_updated_at();
+
+create or replace function public.set_themes_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+    new.updated_at = timezone('utc', now());
+    return new;
+end;
+$$;
+
+drop trigger if exists set_themes_updated_at on public.themes;
+
+create trigger set_themes_updated_at
+before update on public.themes
+for each row
+execute function public.set_themes_updated_at();
+
+commit;

@@ -41,19 +41,34 @@ class SupabaseLoginController extends Controller
             ])->onlyInput('team_name');
         }
 
+        $teamName = trim($credentials['team_name']);
+
         try {
-            $response = Http::acceptJson()
+            $supabaseRequest = Http::acceptJson()
                 ->withHeaders([
                     'apikey' => $key,
                     'Authorization' => 'Bearer '.$key,
                 ])
                 ->connectTimeout(3)
-                ->timeout(10)
-                ->get(rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable), [
+                ->timeout(10);
+            $endpoint = rtrim($url, '/').'/rest/v1/'.rawurlencode($usersTable);
+
+            $response = $supabaseRequest->get($endpoint, [
+                'select' => '*',
+                'login_name' => 'eq.'.mb_strtolower($teamName),
+                'limit' => 1,
+            ]);
+
+            $error = $response->json();
+            if ($response->status() === 400
+                && is_array($error)
+                && ($error['code'] ?? null) === '42703') {
+                $response = $supabaseRequest->get($endpoint, [
                     'select' => '*',
-                    'login_name' => 'eq.'.mb_strtolower(trim($credentials['team_name'])),
+                    'name' => 'eq.'.$teamName,
                     'limit' => 1,
                 ]);
+            }
         } catch (ConnectionException $exception) {
             Log::warning('Unable to connect to the Supabase database.', [
                 'exception' => $exception::class,
@@ -65,8 +80,15 @@ class SupabaseLoginController extends Controller
         }
 
         if (! $response->successful()) {
+            $error = $response->json();
             Log::warning('Supabase database returned an unsuccessful response.', [
                 'status' => $response->status(),
+                'supabase_code' => is_array($error) && is_string($error['code'] ?? null)
+                    ? $error['code']
+                    : null,
+                'supabase_message' => is_array($error) && is_string($error['message'] ?? null)
+                    ? mb_substr($error['message'], 0, 300)
+                    : null,
             ]);
 
             return back()->withErrors([
