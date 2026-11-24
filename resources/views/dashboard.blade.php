@@ -5,14 +5,17 @@
 @section('content')
     <header class="site-header dashboard-site-header">
         <a class="brand" href="{{ route('dashboard') }}" aria-label="CSFEST2026 Dashboard">
-            CSFEST<span>2026</span>
+            <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
         <nav class="nav-links" aria-label="Navigasi utama">
             <a class="dashboard-nav-link dashboard-nav-link-active" href="{{ route('dashboard') }}" aria-current="page">Dashboard</a>
             @if (($user['role'] ?? null) === 'admin')
-                <a class="dashboard-nav-link" href="{{ route('admin.participants.create') }}">Kelola tim</a>
+                <a class="dashboard-nav-link" href="{{ route('admin.participants.create') }}">Pusat Pengelolaan</a>
+                <a class="dashboard-nav-link" href="{{ route('admin.submissions.index') }}">Submission</a>
             @else
-                <a class="dashboard-nav-link" href="{{ route('submission.show') }}">Submission</a>
+                @if ($theme)
+                    <a class="dashboard-nav-link" href="{{ route('submission.show') }}">Submission</a>
+                @endif
             @endif
         </nav>
         <div class="dashboard-nav-actions">
@@ -47,6 +50,10 @@
                 {{ ($user['role'] ?? null) === 'admin' ? 'Akun panitia' : 'Akun tim peserta' }}
             </span>
         </div>
+
+        @if (session('submission_access_error'))
+            <div class="form-alert" role="alert">{{ session('submission_access_error') }}</div>
+        @endif
 
         <div class="dashboard-grid">
             <section class="dashboard-card dashboard-feature">

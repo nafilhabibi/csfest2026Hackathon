@@ -5,7 +5,7 @@
 @section('content')
     <header class="site-header dashboard-site-header">
         <a class="brand" href="{{ route('dashboard') }}" aria-label="CSFEST2026 Dashboard">
-            CSFEST<span>2026</span>
+            <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
         <nav class="nav-links" aria-label="Navigasi peserta">
             <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
@@ -102,6 +102,7 @@
                             name="prototype"
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
+                            aria-describedby="prototype-help prototype-status"
                             @required(! $submission)
                         >
                         <label class="submission-file-picker" for="prototype">
@@ -111,6 +112,24 @@
                                 <small>JPG, PNG, WEBP, GIF · MP4, MOV, WEBM</small>
                             </span>
                         </label>
+                        <p class="submission-file-help" id="prototype-help">Pilih satu file. Nama dan pratinjau gambar akan muncul setelah file dipilih.</p>
+                        <div class="submission-file-preview" data-prototype-preview hidden>
+                            <img data-prototype-preview-image alt="" hidden>
+                            <div>
+                                <strong data-prototype-file-name></strong>
+                                <small data-prototype-file-size></small>
+                            </div>
+                        </div>
+                        <p
+                            class="submission-file-status"
+                            id="prototype-status"
+                            data-prototype-status
+                            data-empty-message="{{ $submission ? 'Prototype tersimpan tetap digunakan jika tidak memilih file pengganti.' : 'Belum ada file dipilih.' }}"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {{ $submission ? 'Prototype tersimpan tetap digunakan jika tidak memilih file pengganti.' : 'Belum ada file dipilih.' }}
+                        </p>
                         @error('prototype')
                             <p class="form-error">{{ $message }}</p>
                         @enderror
@@ -137,7 +156,7 @@
                     </div>
 
                     <button class="button auth-submit" type="submit" @disabled($pageError)>
-                        {{ $submission ? 'Simpan perubahan' : 'Kirim submission' }}
+                        <span data-submission-submit-label>{{ $submission ? 'Simpan perubahan' : 'Kirim submission' }}</span>
                         <span aria-hidden="true">→</span>
                     </button>
                 </form>

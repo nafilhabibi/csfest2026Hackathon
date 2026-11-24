@@ -10,7 +10,7 @@
 
     <header class="site-header portal-site-header">
         <a class="brand" href="{{ route('home') }}" aria-label="CSFEST2026 Beranda">
-            CSFEST<span>2026</span>
+            <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
         <nav class="nav-links" aria-label="Navigasi utama">
             <a href="{{ route('home') }}">Beranda</a>
@@ -25,7 +25,7 @@
     <main class="auth-shell auth-page">
         <section class="auth-aside">
             <div class="auth-aside-copy">
-                <span class="eyebrow"><span class="eyebrow-mark"></span> Campus Solution Fest</span>
+                <span class="eyebrow"><span class="eyebrow-mark"></span> Computer Science Fest</span>
                 <h1>Ide terbaikmu bisa mengubah <em>kampus.</em></h1>
                 <p>Masuk ke portal CSFEST2026 untuk melanjutkan perjalananmu membangun solusi digital terintegrasi.</p>
             </div>

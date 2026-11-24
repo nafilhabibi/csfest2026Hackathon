@@ -10,7 +10,7 @@
 
     <header class="site-header">
         <a class="brand" href="{{ route('home') }}" aria-label="CSFEST2026 Beranda">
-            CSFEST<span>2026</span>
+            <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
         <nav class="nav-links" aria-label="Navigasi utama">
             <a href="#tentang">Tentang</a>
@@ -26,7 +26,7 @@
     <main class="landing-page">
         <section class="hero" id="tentang">
             <div class="hero-copy">
-                <span class="eyebrow"><span class="eyebrow-mark"></span> Campus Solution Fest · Hackathon 2026</span>
+                <span class="eyebrow"><span class="eyebrow-mark"></span> Computer Science Fest · Hackathon 2026</span>
                 <h1>Build a better campus, <em>together.</em></h1>
                 <p class="hero-description" id="tema">
                     Innovating Integrated Digital Solutions for Better Campus Life.
@@ -87,7 +87,7 @@
     </main>
 
     <footer class="page-footer">
-        <span>© 2026 CSFEST · Campus Solution Fest</span>
+        <span>© 2026 CSFEST · Computer Science Fest</span>
         <span>Innovating campus life, one idea at a time.</span>
     </footer>
 @endsection

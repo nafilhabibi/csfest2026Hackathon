@@ -5,11 +5,12 @@
 @section('content')
     <header class="site-header dashboard-site-header portal-site-header">
         <a class="brand" href="{{ route('dashboard') }}" aria-label="CSFEST2026 Dashboard">
-            CSFEST<span>2026</span>
+            <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
         <nav class="nav-links" aria-label="Navigasi admin">
             <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
             <a class="dashboard-nav-link dashboard-nav-link-active" href="{{ route('admin.participants.create') }}" aria-current="page">Pusat pengelolaan</a>
+            <a class="dashboard-nav-link" href="{{ route('admin.submissions.index') }}">Submission</a>
         </nav>
         <div class="dashboard-nav-actions">
             <span class="dashboard-nav-user">
