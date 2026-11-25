@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\SubmissionAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
@@ -44,6 +45,77 @@ class SubmissionTest extends TestCase
             ->assertSee('Another')
             ->assertSee('5 MB')
             ->assertSee('30 MB');
+    }
+
+    public function test_closed_submission_form_is_read_only_for_participant(): void
+    {
+        app(SubmissionAvailability::class)->setClosed(true);
+        Http::preventStrayRequests();
+        Http::fake($this->assignedThemeFake());
+
+        $this->withSession($this->participantSession())
+            ->get(route('submission.show'))
+            ->assertOk()
+            ->assertSee('Submission telah ditutup oleh panitia.')
+            ->assertSee('<fieldset class="submission-form-fields" disabled>', false)
+            ->assertSee('Satu submission per tim');
+    }
+
+    public function test_closed_submission_rejects_new_submissions(): void
+    {
+        app(SubmissionAvailability::class)->setClosed(true);
+        Http::preventStrayRequests();
+        Http::fake($this->assignedThemeFake());
+
+        $this->withSession($this->participantSession())
+            ->post(route('submission.store'), [
+                'submitter_name' => 'Alya',
+                'github_link' => 'https://github.com/csfest/team-app',
+                'prototype' => UploadedFile::fake()->create('prototype.png', 450)->mimeType('image/png'),
+            ])
+            ->assertRedirect(route('submission.show'))
+            ->assertSessionHasErrors([
+                'submission' => 'Submission sudah ditutup. Pengiriman dan pembaruan tidak dapat dilakukan.',
+            ]);
+
+        $this->assertDatabaseMissing('submissions', [
+            'participant_id' => $this->participantId,
+        ]);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '/storage/v1/object/'));
+    }
+
+    public function test_closed_submission_rejects_updates_to_existing_submissions(): void
+    {
+        DB::table('submissions')->insert([
+            'participant_id' => $this->participantId,
+            'submitter_name' => 'Alya',
+            'github_link' => 'https://github.com/csfest/old-app',
+            'prototype_path' => 'participants/'.$this->participantId.'/existing.png',
+            'prototype_mime_type' => 'image/png',
+            'additional_text' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        app(SubmissionAvailability::class)->setClosed(true);
+        Http::preventStrayRequests();
+        Http::fake($this->assignedThemeFake());
+
+        $this->withSession($this->participantSession())
+            ->post(route('submission.store'), [
+                'submitter_name' => 'Alya Baru',
+                'github_link' => 'https://github.com/csfest/new-app',
+            ])
+            ->assertRedirect(route('submission.show'))
+            ->assertSessionHasErrors([
+                'submission' => 'Submission sudah ditutup. Pengiriman dan pembaruan tidak dapat dilakukan.',
+            ]);
+
+        $this->assertDatabaseHas('submissions', [
+            'participant_id' => $this->participantId,
+            'submitter_name' => 'Alya',
+            'github_link' => 'https://github.com/csfest/old-app',
+        ]);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '/storage/v1/object/'));
     }
 
     public function test_admin_cannot_open_or_create_a_participant_submission(): void
@@ -173,6 +245,82 @@ class SubmissionTest extends TestCase
             ->assertSee('Perbarui submission')
             ->assertSee('Lihat prototype saat ini')
             ->assertSee('https://csfest-test.supabase.co/storage/v1/object/sign/Submission/'.$prototypePath.'?token=temporary-token', false);
+    }
+
+    public function test_participant_can_view_their_team_assessments_in_a_table(): void
+    {
+        $privateKeyResource = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+        $this->assertNotFalse($privateKeyResource);
+        $this->assertTrue(openssl_pkey_export($privateKeyResource, $privateKey));
+        config([
+            'services.google_sheets.spreadsheet_id' => 'test-spreadsheet',
+            'services.google_sheets.worksheet' => 'Penilaian',
+            'services.google_sheets.service_account_json_base64' => base64_encode(json_encode([
+                'client_email' => 'judge-sheets@example.iam.gserviceaccount.com',
+                'private_key' => $privateKey,
+            ], JSON_THROW_ON_ERROR)),
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            ...$this->assignedThemeFake(),
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'google-access-token']),
+            'sheets.googleapis.com/*' => function (Request $request) {
+                if (str_contains($request->url(), '/values/')) {
+                    return Http::response([
+                        'values' => [
+                            [
+                                'Nama Juri',
+                                'Nama Tim',
+                                'Kesesuaian Solusi dengan Studi Kasus',
+                                'Inovasi dan Kreativitas Ide',
+                                'Kelayakan Implementasi',
+                                'Kualitas Rancangan Solusi',
+                                'Kualitas Prototype Awal',
+                                'Total Nilai',
+                                'Komentar',
+                                'ID Juri Internal',
+                                'ID Tim Internal',
+                            ],
+                            [
+                                'Juri Satu', 'Tim Peserta', 5, 4, 3, 4, 5, 21, 'Solusi kuat.',
+                                'judge-1', $this->participantId,
+                            ],
+                            [
+                                'Juri Rahasia', 'Tim Lain', 1, 1, 1, 1, 1, 5, 'Komentar tim lain.',
+                                'judge-2', 'other-team',
+                            ],
+                        ],
+                    ]);
+                }
+
+                return Http::response([
+                    'sheets' => [[
+                        'properties' => ['sheetId' => 17, 'title' => 'Penilaian'],
+                        'data' => [[
+                            'startColumn' => 9,
+                            'columnMetadata' => [
+                                ['hiddenByUser' => true],
+                                ['hiddenByUser' => true],
+                            ],
+                        ]],
+                    ]],
+                ]);
+            },
+        ]);
+
+        $response = $this->withSession($this->participantSession())
+            ->get(route('submission.assessment.show'));
+
+        $response->assertOk()
+            ->assertSee('<table class="participant-assessment-table">', false)
+            ->assertSee('Juri Satu')
+            ->assertSee('Solusi kuat.')
+            ->assertSee('21 / 25')
+            ->assertDontSee('Juri Rahasia')
+            ->assertDontSee('Komentar tim lain.');
     }
 
     public function test_submission_requires_a_github_repository_and_a_prototype_on_first_submit(): void

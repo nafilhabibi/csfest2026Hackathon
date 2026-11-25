@@ -31,6 +31,20 @@ for (const button of themeToggleButtons) {
     });
 }
 
+const submissionWindowSwitch = document.querySelector('[data-submission-window-switch]');
+
+if (submissionWindowSwitch instanceof HTMLInputElement) {
+    submissionWindowSwitch.addEventListener('change', () => {
+        const form = submissionWindowSwitch.form;
+
+        if (form) {
+            submissionWindowSwitch.setAttribute('aria-checked', String(submissionWindowSwitch.checked));
+            form.setAttribute('aria-busy', 'true');
+            form.requestSubmit();
+        }
+    });
+}
+
 const prototypeInput = document.querySelector('#prototype');
 const prototypePreview = document.querySelector('[data-prototype-preview]');
 const prototypePreviewImage = document.querySelector('[data-prototype-preview-image]');

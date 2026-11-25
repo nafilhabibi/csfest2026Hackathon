@@ -10,6 +10,7 @@
         <nav class="nav-links" aria-label="Navigasi peserta">
             <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
             <a class="dashboard-nav-link dashboard-nav-link-active" href="{{ route('submission.show') }}" aria-current="page">Submission</a>
+            <a class="dashboard-nav-link" href="{{ route('submission.assessment.show') }}">Penilaian</a>
         </nav>
         <div class="dashboard-nav-actions">
             <span class="dashboard-nav-user">
@@ -45,6 +46,12 @@
             <div class="form-alert" role="alert">{{ $pageError }}</div>
         @endif
 
+        @if ($submissionClosed)
+            <div class="form-alert submission-closed-alert" role="status">
+                Submission telah ditutup oleh panitia. Kamu masih dapat melihat data yang tersimpan, tetapi tidak dapat mengirim atau memperbaruinya.
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="form-alert" role="alert">{{ $errors->first() }}</div>
         @endif
@@ -61,6 +68,7 @@
 
                 <form method="POST" action="{{ route('submission.store') }}" enctype="multipart/form-data">
                     @csrf
+                    <fieldset class="submission-form-fields" @disabled($submissionClosed || $pageError)>
                     <div class="form-field">
                         <label for="submitter_name">Nama <span>(orang yang melakukan submit)</span></label>
                         <input
@@ -155,10 +163,11 @@
                         @enderror
                     </div>
 
-                    <button class="button auth-submit" type="submit" @disabled($pageError)>
+                    <button class="button auth-submit" type="submit">
                         <span data-submission-submit-label>{{ $submission ? 'Simpan perubahan' : 'Kirim submission' }}</span>
                         <span aria-hidden="true">→</span>
                     </button>
+                    </fieldset>
                 </form>
             </section>
 

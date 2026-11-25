@@ -45,6 +45,10 @@
             <span class="dashboard-account-chip">{{ count(array_filter($participants, fn (array $participant): bool => $participant['has_submission'])) }} dari {{ count($participants) }} tim mengirim</span>
         </div>
 
+        @if ($assessmentError)
+            <div class="form-alert" role="alert">{{ $assessmentError }}</div>
+        @endif
+
         @if ($dataError)
             <div class="form-alert" role="alert">{{ $dataError }}</div>
         @elseif ($participants === [])
@@ -76,9 +80,21 @@
                                         <small>Buka detail submission <span aria-hidden="true">→</span></small>
                                     </span>
                                 </span>
-                                <span class="admin-submission-badge admin-submission-badge-submitted">
-                                    <span aria-hidden="true"></span> Sudah submission
-                                </span>
+                                @if ($isJudge)
+                                    <span class="judge-submission-statuses">
+                                        <span class="admin-submission-badge admin-submission-badge-submitted">
+                                            <span aria-hidden="true"></span> Sudah submission
+                                        </span>
+                                        <span class="admin-submission-badge {{ $participant['has_assessment'] ? 'admin-submission-badge-submitted' : 'admin-submission-badge-pending' }}">
+                                            <span aria-hidden="true"></span>
+                                            {{ $assessmentError ? 'Nilai belum tersedia' : ($participant['has_assessment'] ? 'Sudah dinilai' : 'Belum dinilai') }}
+                                        </span>
+                                    </span>
+                                @else
+                                    <span class="admin-submission-badge admin-submission-badge-submitted">
+                                        <span aria-hidden="true"></span> Sudah submission
+                                    </span>
+                                @endif
                             </a>
                         @else
                             <div class="admin-submission-row">

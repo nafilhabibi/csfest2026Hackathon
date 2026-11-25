@@ -73,6 +73,7 @@
                     <a href="#team-account">Akun tim <span aria-hidden="true">↓</span></a>
                     <a href="#judge-account">Akun juri <span aria-hidden="true">↓</span></a>
                     <a href="#study-cases">Studi kasus <span aria-hidden="true">↓</span></a>
+                    <a href="#submission-window">Status submission <span aria-hidden="true">↓</span></a>
                     <a href="#team-assignments">Penetapan tema <span aria-hidden="true">↓</span></a>
                 </nav>
             </div>
@@ -90,6 +91,39 @@
                     <strong>{{ $dataError ? '—' : $unassignedTeamCount }}</strong>
                 </div>
             </div>
+        </section>
+
+        <section class="dashboard-card submission-window-card" id="submission-window">
+            <div>
+                <span class="admin-overview-label">Kontrol submission</span>
+                <h2>Status pengiriman submission</h2>
+                <p class="management-intro">
+                    {{ $submissionClosed
+                        ? 'Submission sedang ditutup. Peserta tidak dapat mengirim atau memperbarui submission.'
+                        : 'Submission sedang dibuka. Peserta dapat mengirim dan memperbarui submission.' }}
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.submissions.settings.update') }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="closed" value="0">
+                <label class="submission-window-toggle" for="submission_closed">
+                    <span>{{ $submissionClosed ? 'Tutup submission' : 'Buka submission' }}</span>
+                    <input
+                        id="submission_closed"
+                        name="closed"
+                        type="checkbox"
+                        value="1"
+                        role="switch"
+                        data-submission-window-switch
+                        aria-checked="{{ $submissionClosed ? 'true' : 'false' }}"
+                        @checked($submissionClosed)
+                    >
+                </label>
+                <button class="button button-small" type="submit">
+                    {{ $submissionClosed ? 'Simpan dan buka submission' : 'Simpan dan tutup submission' }}
+                </button>
+            </form>
         </section>
 
         <div class="management-grid">

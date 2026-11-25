@@ -15,6 +15,7 @@
             @else
                 @if ($theme)
                     <a class="dashboard-nav-link" href="{{ route('submission.show') }}">Submission</a>
+                    <a class="dashboard-nav-link" href="{{ route('submission.assessment.show') }}">Penilaian</a>
                 @endif
             @endif
         </nav>

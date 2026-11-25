@@ -57,6 +57,78 @@
             <p class="admin-submission-theme">Tema tim: <strong>{{ $team['theme']['title'] }}</strong></p>
         @endif
 
+        @if (session('app_user.role') === 'judge')
+            <section class="dashboard-card admin-submission-detail-card judge-assessment-card">
+                <div class="admin-submission-list-heading">
+                    <div>
+                        <span class="admin-submission-detail-label">Penilaian juri</span>
+                        <h2>{{ $assessment ? 'Perbarui penilaian' : 'Beri penilaian' }}</h2>
+                        <p>Nilai setiap aspek dari 1 sampai 5. Semua aspek memiliki bobot yang sama.</p>
+                    </div>
+                    @if ($assessment)
+                        <span class="admin-submission-badge admin-submission-badge-submitted">
+                            <span aria-hidden="true"></span> Total {{ $assessment['total'] }} / 25
+                        </span>
+                    @endif
+                </div>
+
+                @if (session('status'))
+                    <div class="form-alert form-alert-success" role="status">{{ session('status') }}</div>
+                @endif
+
+                @if ($assessmentError)
+                    <div class="form-alert" role="alert">{{ $assessmentError }}</div>
+                @endif
+
+                @if ($errors->has('assessment'))
+                    <div class="form-alert" role="alert">{{ $errors->first('assessment') }}</div>
+                @endif
+
+                <p class="judge-score-guide">
+                    @foreach (\App\Services\GoogleSheetsAssessmentClient::SCORE_LABELS as $score => $scoreLabel)
+                        @if (! $loop->first) · @endif
+                        {{ $score }} — {{ $scoreLabel }}
+                    @endforeach
+                </p>
+
+                <form method="POST" action="{{ route('admin.submissions.assessment.store', $submission->participant_id) }}">
+                    @csrf
+
+                    @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $criterion => $label)
+                        <div class="form-field">
+                            <label for="score_{{ $criterion }}">{{ $label }}</label>
+                            <select id="score_{{ $criterion }}" name="scores[{{ $criterion }}]" required>
+                                <option value="">Pilih nilai</option>
+                                @foreach (\App\Services\GoogleSheetsAssessmentClient::SCORE_LABELS as $score => $scoreLabel)
+                                    <option
+                                        value="{{ $score }}"
+                                        @selected((string) old('scores.'.$criterion, $assessment['scores'][$criterion] ?? '') === (string) $score)
+                                    >
+                                        {{ $score }} — {{ $scoreLabel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('scores.'.$criterion)
+                                <p class="form-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    @endforeach
+
+                    <div class="form-field">
+                        <label for="assessment_comment">Komentar (opsional)</label>
+                        <textarea id="assessment_comment" name="comment" rows="4" maxlength="5000">{{ old('comment', $assessment['comment'] ?? '') }}</textarea>
+                        @error('comment')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button class="button auth-submit" type="submit">
+                        {{ $assessment ? 'Simpan perubahan nilai' : 'Simpan penilaian' }} <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+            </section>
+        @endif
+
         <div class="admin-submission-detail-grid">
             <section class="dashboard-card admin-submission-detail-card">
                 <div class="admin-submission-list-heading">
@@ -107,10 +179,12 @@
                             <span>Buka gambar ukuran penuh ↗</span>
                         </a>
                     @elseif (str_starts_with($submission->prototype_mime_type, 'video/'))
-                        <video class="admin-submission-video" controls preload="metadata">
-                            <source src="{{ $prototypeUrl }}" type="{{ $submission->prototype_mime_type }}">
+                        <video class="admin-submission-video" controls playsinline preload="metadata" src="{{ $prototypeUrl }}">
                             Browser tidak mendukung pemutaran video.
                         </video>
+                        <a class="admin-submission-media-link" href="{{ $prototypeUrl }}" target="_blank" rel="noopener noreferrer">
+                            Buka video di tab baru
+                        </a>
                     @else
                         <a class="button button-small" href="{{ $prototypeUrl }}" target="_blank" rel="noopener noreferrer">Buka file prototype ↗</a>
                     @endif

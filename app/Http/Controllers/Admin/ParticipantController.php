@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\SubmissionAvailability;
 use App\Services\SupabaseRestClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -13,19 +14,23 @@ use Illuminate\View\View;
 
 class ParticipantController extends Controller
 {
-    public function __construct(private SupabaseRestClient $supabase) {}
+    public function __construct(
+        private SupabaseRestClient $supabase,
+        private SubmissionAvailability $submissionAvailability,
+    ) {}
 
     public function create(): View
     {
         $participants = [];
         $themes = [];
         $dataError = null;
+        $submissionClosed = $this->submissionAvailability->isClosed();
 
         if (! $this->supabase->isConfigured()) {
             Log::error('Cannot load participant management because Supabase configuration is missing.');
             $dataError = 'Konfigurasi database belum lengkap.';
 
-            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError', 'submissionClosed'));
         }
 
         try {
@@ -50,7 +55,7 @@ class ParticipantController extends Controller
             ]);
             $dataError = 'Layanan database sedang tidak dapat dijangkau.';
 
-            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError', 'submissionClosed'));
         }
 
         $participantRows = $participantsResponse->json();
@@ -64,13 +69,13 @@ class ParticipantController extends Controller
             ]);
             $dataError = 'Data tim dan studi kasus belum dapat dimuat. Silakan coba lagi.';
 
-            return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+            return view('admin.participants.create', compact('participants', 'themes', 'dataError', 'submissionClosed'));
         }
 
         $participants = $participantRows;
         $themes = $themeRows;
 
-        return view('admin.participants.create', compact('participants', 'themes', 'dataError'));
+        return view('admin.participants.create', compact('participants', 'themes', 'dataError', 'submissionClosed'));
     }
 
     public function store(Request $request): RedirectResponse

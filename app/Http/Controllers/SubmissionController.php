@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SubmissionAvailability;
 use App\Services\SupabaseSubmissionClient;
 use Closure;
 use Illuminate\Database\QueryException;
@@ -18,7 +19,10 @@ use Illuminate\View\View;
 
 class SubmissionController extends Controller
 {
-    public function __construct(private SupabaseSubmissionClient $supabase) {}
+    public function __construct(
+        private SupabaseSubmissionClient $supabase,
+        private SubmissionAvailability $submissionAvailability,
+    ) {}
 
     public function show(Request $request): View
     {
@@ -26,12 +30,13 @@ class SubmissionController extends Controller
         $submission = null;
         $prototypeUrl = null;
         $pageError = null;
+        $submissionClosed = $this->submissionAvailability->isClosed();
 
         if (! $this->supabase->isConfigured()) {
             Log::error('Cannot load a submission because Supabase storage configuration is missing.');
             $pageError = 'Layanan submission belum dikonfigurasi. Silakan hubungi panitia.';
 
-            return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError'));
+            return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError', 'submissionClosed'));
         }
 
         $submissionRecord = DB::table('submissions')
@@ -48,7 +53,7 @@ class SubmissionController extends Controller
                 ]);
                 $pageError = 'Tautan prototype belum dapat dibuat. Coba muat ulang halaman.';
 
-                return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError'));
+                return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError', 'submissionClosed'));
             }
 
             $signedUrl = $signedUrlResponse->json('signedURL');
@@ -62,12 +67,18 @@ class SubmissionController extends Controller
             }
         }
 
-        return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError'));
+        return view('submission.show', compact('user', 'submission', 'prototypeUrl', 'pageError', 'submissionClosed'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $user = $request->session()->get('app_user');
+
+        if ($this->submissionAvailability->isClosed()) {
+            return back()->withErrors([
+                'submission' => 'Submission sudah ditutup. Pengiriman dan pembaruan tidak dapat dilakukan.',
+            ]);
+        }
 
         if (! $this->supabase->isConfigured()) {
             Log::error('Cannot save a submission because Supabase storage configuration is missing.');

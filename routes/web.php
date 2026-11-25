@@ -3,9 +3,12 @@
 use App\Http\Controllers\Admin\JudgeController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\SubmissionController as AdminSubmissionController;
+use App\Http\Controllers\Admin\SubmissionSettingsController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Auth\SupabaseLoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JudgeAssessmentController;
+use App\Http\Controllers\ParticipantAssessmentController;
 use App\Http\Controllers\SubmissionController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,16 +32,24 @@ Route::middleware('supabase.auth')->group(function (): void {
     Route::middleware(['supabase.participant', 'supabase.theme-assigned'])->group(function (): void {
         Route::get('/submission', [SubmissionController::class, 'show'])->name('submission.show');
         Route::post('/submission', [SubmissionController::class, 'store'])->name('submission.store');
+        Route::get('/submission/assessment', [ParticipantAssessmentController::class, 'show'])
+            ->name('submission.assessment.show');
     });
     Route::middleware('supabase.submission-reviewer')->group(function (): void {
         Route::get('/admin/submissions', [AdminSubmissionController::class, 'index'])->name('admin.submissions.index');
         Route::get('/admin/submissions/{participant}', [AdminSubmissionController::class, 'show'])
             ->where('participant', '[^/]+')
             ->name('admin.submissions.show');
+        Route::post('/admin/submissions/{participant}/assessment', [JudgeAssessmentController::class, 'store'])
+            ->where('participant', '[^/]+')
+            ->middleware('supabase.judge')
+            ->name('admin.submissions.assessment.store');
     });
     Route::middleware('supabase.admin')->group(function (): void {
         Route::get('/admin/participants/create', [ParticipantController::class, 'create'])->name('admin.participants.create');
         Route::post('/admin/participants', [ParticipantController::class, 'store'])->name('admin.participants.store');
+        Route::patch('/admin/submissions/settings', [SubmissionSettingsController::class, 'update'])
+            ->name('admin.submissions.settings.update');
         Route::post('/admin/judges', [JudgeController::class, 'store'])->name('admin.judges.store');
         Route::patch('/admin/participants/{participant}/theme', [ParticipantController::class, 'updateTheme'])
             ->name('admin.participants.theme.update');

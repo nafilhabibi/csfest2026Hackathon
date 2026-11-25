@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureSupabaseAdmin;
 use App\Http\Middleware\EnsureSupabaseAuthenticated;
 use App\Http\Middleware\EnsureSupabaseDashboardAccess;
+use App\Http\Middleware\EnsureSupabaseJudge;
 use App\Http\Middleware\EnsureSupabaseParticipant;
 use App\Http\Middleware\EnsureSupabaseSubmissionReviewer;
 use App\Http\Middleware\EnsureSupabaseThemeAssigned;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'supabase.admin' => EnsureSupabaseAdmin::class,
             'supabase.participant' => EnsureSupabaseParticipant::class,
             'supabase.dashboard' => EnsureSupabaseDashboardAccess::class,
+            'supabase.judge' => EnsureSupabaseJudge::class,
             'supabase.submission-reviewer' => EnsureSupabaseSubmissionReviewer::class,
             'supabase.theme-assigned' => EnsureSupabaseThemeAssigned::class,
         ]);

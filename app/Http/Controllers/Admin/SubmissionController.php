@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\GoogleSheetsException;
 use App\Http\Controllers\Controller;
+use App\Services\GoogleSheetsAssessmentClient;
 use App\Services\SupabaseRestClient;
 use App\Services\SupabaseSubmissionClient;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -16,18 +19,23 @@ class SubmissionController extends Controller
     public function __construct(
         private SupabaseRestClient $database,
         private SupabaseSubmissionClient $storage,
+        private GoogleSheetsAssessmentClient $assessments,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $participants = [];
         $dataError = null;
+        $assessmentError = null;
+        $judgeAssessments = [];
+        $user = $request->session()->get('app_user', []);
+        $isJudge = ($user['role'] ?? null) === 'judge';
 
         if (! $this->database->isConfigured()) {
             Log::error('Cannot load admin submissions because Supabase configuration is missing.');
             $dataError = 'Konfigurasi database belum lengkap.';
 
-            return view('admin.submissions.index', compact('participants', 'dataError'));
+            return view('admin.submissions.index', compact('participants', 'dataError', 'assessmentError', 'isJudge'));
         }
 
         try {
@@ -45,7 +53,7 @@ class SubmissionController extends Controller
             ]);
             $dataError = 'Layanan database sedang tidak dapat dijangkau.';
 
-            return view('admin.submissions.index', compact('participants', 'dataError'));
+            return view('admin.submissions.index', compact('participants', 'dataError', 'assessmentError', 'isJudge'));
         }
 
         $participantRows = $response->json();
@@ -55,7 +63,7 @@ class SubmissionController extends Controller
             ]);
             $dataError = 'Data tim belum dapat dimuat. Silakan coba lagi.';
 
-            return view('admin.submissions.index', compact('participants', 'dataError'));
+            return view('admin.submissions.index', compact('participants', 'dataError', 'assessmentError', 'isJudge'));
         }
 
         try {
@@ -66,7 +74,7 @@ class SubmissionController extends Controller
             ]);
             $dataError = 'Data submission belum dapat dimuat. Silakan periksa koneksi database.';
 
-            return view('admin.submissions.index', compact('participants', 'dataError'));
+            return view('admin.submissions.index', compact('participants', 'dataError', 'assessmentError', 'isJudge'));
         }
 
         $submittedParticipantIds = array_fill_keys(
@@ -74,18 +82,36 @@ class SubmissionController extends Controller
             true,
         );
 
+        if ($isJudge) {
+            try {
+                $judgeAssessments = $this->assessments->forJudge((string) $user['id']);
+            } catch (GoogleSheetsException $exception) {
+                Log::warning('Unable to load judge assessment statuses from Google Sheets.', [
+                    'exception' => $exception::class,
+                    'message' => $exception->getMessage(),
+                ]);
+                $assessmentError = 'Status penilaian belum dapat dimuat. Anda tetap dapat membuka submission dan mencoba lagi.';
+            }
+        }
+
         $participants = array_map(
             fn (array $participant): array => [
                 ...$participant,
                 'has_submission' => isset($submittedParticipantIds[(string) $participant['id']]),
+                'has_assessment' => isset($judgeAssessments[(string) $participant['id']]),
             ],
             $participantRows,
         );
 
-        return view('admin.submissions.index', compact('participants', 'dataError'));
+        return view('admin.submissions.index', compact(
+            'participants',
+            'dataError',
+            'assessmentError',
+            'isJudge',
+        ));
     }
 
-    public function show(string $participant): View
+    public function show(Request $request, string $participant): View
     {
         try {
             $submission = DB::table('submissions')
@@ -123,7 +149,7 @@ class SubmissionController extends Controller
                 ]);
                 $teamError = 'Informasi tim sedang tidak dapat dimuat. Coba muat ulang halaman.';
 
-                return $this->submissionView($submission, $team, $teamError);
+                return $this->submissionView($submission, $team, $teamError, $request);
             }
 
             $teamRows = $teamResponse->json();
@@ -144,7 +170,7 @@ class SubmissionController extends Controller
             }
         }
 
-        return $this->submissionView($submission, $team, $teamError);
+        return $this->submissionView($submission, $team, $teamError, $request);
     }
 
     /**
@@ -172,40 +198,55 @@ class SubmissionController extends Controller
     /**
      * @param  array<string, mixed>|null  $team
      */
-    private function submissionView(object $submission, ?array $team, ?string $teamError): View
-    {
+    private function submissionView(
+        object $submission,
+        ?array $team,
+        ?string $teamError,
+        Request $request,
+    ): View {
         $prototypeUrl = null;
         $mediaError = null;
+        $assessment = null;
+        $assessmentError = null;
 
         if (! $this->storage->isConfigured()) {
             Log::error('Cannot create an admin submission media URL because Supabase Storage configuration is missing.');
             $mediaError = 'File prototype belum dapat ditampilkan karena konfigurasi Storage belum lengkap.';
         } else {
+            $signedUrlResponse = null;
+
             try {
-                $response = $this->storage->createSignedUrl($submission->prototype_path);
+                $signedUrlResponse = $this->storage->createSignedUrl($submission->prototype_path);
             } catch (ConnectionException $exception) {
                 Log::warning('Unable to create a signed URL for an admin submission prototype.', [
                     'exception' => $exception::class,
                 ]);
                 $mediaError = 'File prototype sedang tidak dapat dibuka. Coba muat ulang halaman.';
-
-                return view('admin.submissions.show', compact(
-                    'submission',
-                    'team',
-                    'teamError',
-                    'prototypeUrl',
-                    'mediaError',
-                ));
             }
 
-            $signedUrl = $response->json('signedURL');
-            if ($response->successful() && is_string($signedUrl)) {
-                $prototypeUrl = $this->storage->signedUrl($signedUrl);
-            } else {
-                Log::warning('Supabase returned an unsuccessful response while signing an admin submission prototype.', [
-                    'status' => $response->status(),
+            if ($signedUrlResponse !== null) {
+                $signedUrl = $signedUrlResponse->json('signedURL');
+                if ($signedUrlResponse->successful() && is_string($signedUrl)) {
+                    $prototypeUrl = $this->storage->signedUrl($signedUrl);
+                } else {
+                    Log::warning('Supabase returned an unsuccessful response while signing an admin submission prototype.', [
+                        'status' => $signedUrlResponse->status(),
+                    ]);
+                    $mediaError = 'File prototype belum dapat dibuka. Coba muat ulang halaman.';
+                }
+            }
+        }
+
+        $user = $request->session()->get('app_user', []);
+        if (($user['role'] ?? null) === 'judge') {
+            try {
+                $assessment = $this->assessments->findForJudge((string) $user['id'], (string) $submission->participant_id);
+            } catch (GoogleSheetsException $exception) {
+                Log::warning('Unable to load a judge assessment from Google Sheets.', [
+                    'exception' => $exception::class,
+                    'message' => $exception->getMessage(),
                 ]);
-                $mediaError = 'File prototype belum dapat dibuka. Coba muat ulang halaman.';
+                $assessmentError = 'Data penilaian belum dapat dimuat. Silakan coba lagi.';
             }
         }
 
@@ -215,6 +256,8 @@ class SubmissionController extends Controller
             'teamError',
             'prototypeUrl',
             'mediaError',
+            'assessment',
+            'assessmentError',
         ));
     }
 }

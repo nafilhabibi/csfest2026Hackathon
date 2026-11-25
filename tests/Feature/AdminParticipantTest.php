@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AdminParticipantTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,8 +67,61 @@ class AdminParticipantTest extends TestCase
             ->assertSee('Pusat pengelolaan')
             ->assertSee('href="#team-account"', false)
             ->assertSee('href="#study-cases"', false)
+            ->assertSee('href="#submission-window"', false)
+            ->assertSee('Status pengiriman submission')
             ->assertSee('href="#team-assignments"', false)
             ->assertSee('Belum mendapat tema');
+    }
+
+    public function test_admin_can_close_and_reopen_submissions(): void
+    {
+        $adminSession = [
+            'app_user' => [
+                'id' => 1,
+                'name' => 'Admin',
+                'role' => 'admin',
+            ],
+        ];
+
+        $this->withSession($adminSession)
+            ->patch(route('admin.submissions.settings.update'), ['closed' => '1'])
+            ->assertRedirect(route('admin.participants.create'))
+            ->assertSessionHas(
+                'status',
+                'Submission berhasil ditutup. Peserta tidak dapat mengirim atau memperbarui submission.',
+            );
+
+        $this->assertDatabaseHas('app_settings', [
+            'setting_key' => 'submissions_closed',
+            'setting_value' => '1',
+        ]);
+
+        $this->withSession($adminSession)
+            ->patch(route('admin.submissions.settings.update'), ['closed' => '0'])
+            ->assertRedirect(route('admin.participants.create'))
+            ->assertSessionHas('status', 'Submission dibuka kembali.');
+
+        $this->assertDatabaseHas('app_settings', [
+            'setting_key' => 'submissions_closed',
+            'setting_value' => '0',
+        ]);
+    }
+
+    public function test_non_admin_cannot_change_submission_availability(): void
+    {
+        $this->withSession([
+            'app_user' => [
+                'id' => 'judge-1',
+                'name' => 'Juri',
+                'role' => 'judge',
+            ],
+        ])->patch(route('admin.submissions.settings.update'), ['closed' => '1'])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('app_settings', [
+            'setting_key' => 'submissions_closed',
+            'setting_value' => '0',
+        ]);
     }
 
     public function test_admin_management_does_not_show_empty_counts_when_data_cannot_load(): void

@@ -43,4 +43,10 @@ return [
         'users_table' => env('SUPABASE_USERS_TABLE', 'users'),
     ],
 
+    'google_sheets' => [
+        'spreadsheet_id' => env('GOOGLE_SHEETS_SPREADSHEET_ID'),
+        'worksheet' => env('GOOGLE_SHEETS_WORKSHEET', 'Penilaian'),
+        'service_account_json_base64' => env('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64'),
+    ],
+
 ];

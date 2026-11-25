@@ -121,6 +121,41 @@ class AdminSubmissionTest extends TestCase
             ->assertDontSee('Pusat pengelolaan');
     }
 
+    public function test_judge_can_play_a_video_prototype_and_open_it_in_a_new_tab(): void
+    {
+        $this->createSubmission('team-video', [
+            'prototype_path' => 'participants/team-video/prototype.mp4',
+            'prototype_mime_type' => 'video/mp4',
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
+                'id' => 'team-video',
+                'name' => 'Tim Video',
+                'theme' => ['title' => 'Kampus Terhubung'],
+            ]]),
+            'csfest-test.supabase.co/storage/v1/object/sign/Submission/*' => Http::response([
+                'signedURL' => 'https://csfest-test.supabase.co/storage/v1/object/sign/Submission/prototype.mp4?token=private',
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'app_user' => [
+                'id' => 'judge-123',
+                'name' => 'Juri Satu',
+                'role' => 'judge',
+            ],
+        ])->get(route('admin.submissions.show', 'team-video'));
+
+        $response->assertOk()
+            ->assertSee(
+                '<video class="admin-submission-video" controls playsinline preload="metadata" src="https://csfest-test.supabase.co/storage/v1/object/sign/Submission/prototype.mp4?token=private">',
+                false,
+            )
+            ->assertSee('Buka video di tab baru')
+            ->assertSee('https://csfest-test.supabase.co/storage/v1/object/sign/Submission/prototype.mp4?token=private', false);
+    }
+
     public function test_participant_cannot_access_admin_submission_pages(): void
     {
         $response = $this->withSession([

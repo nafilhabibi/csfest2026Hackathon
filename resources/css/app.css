@@ -751,6 +751,52 @@ input {
     font-weight: 600;
 }
 
+.submission-window-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+    padding: 24px 28px;
+}
+
+.submission-window-card h2 {
+    margin: 8px 0;
+}
+
+.submission-window-card p {
+    margin-bottom: 0;
+}
+
+.submission-window-card form {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.submission-window-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.submission-window-toggle input {
+    width: 44px;
+    height: 24px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.submission-window-toggle input:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
 .admin-form-card {
     padding: 28px;
 }
@@ -1436,6 +1482,24 @@ input {
     .management-card,
     .admin-form-card {
         padding: 22px;
+    }
+
+    .submission-window-card,
+    .submission-window-card form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .submission-window-card {
+        padding: 22px;
+    }
+
+    .submission-window-card form {
+        gap: 12px;
+    }
+
+    .submission-window-toggle {
+        justify-content: space-between;
     }
 
     .management-section-heading {
@@ -2359,6 +2423,17 @@ html[data-theme='night'] .admin-page .team-assignment-form select {
     grid-template-columns: minmax(0, 1.5fr) minmax(240px, .7fr);
     align-items: start;
     gap: 18px;
+}
+
+.submission-form-fields {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.submission-form-fields:disabled {
+    opacity: .68;
 }
 
 .submission-form-card,
@@ -3611,6 +3686,13 @@ html[data-theme='night'] .submission-page .submission-guidance li::before {
     color: #626b81;
 }
 
+.judge-submission-statuses {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .admin-submission-empty {
     margin: 0;
     padding: 18px 0;
@@ -3624,6 +3706,32 @@ html[data-theme='night'] .submission-page .submission-guidance li::before {
     align-items: start;
     gap: 18px;
     margin-top: 20px;
+}
+
+.judge-assessment-card {
+    display: grid;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.judge-assessment-card .form-alert,
+.judge-assessment-card .judge-score-guide {
+    margin: 0;
+}
+
+.judge-score-guide {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.judge-assessment-card form {
+    display: grid;
+    gap: 16px;
+}
+
+.judge-assessment-card .form-field {
+    margin: 0;
 }
 
 .admin-submission-detail-label {
@@ -3708,6 +3816,76 @@ html[data-theme='night'] .submission-page .submission-guidance li::before {
     margin-top: 18px;
     border-radius: 12px;
     background: #11121f;
+}
+
+.participant-assessment-card,
+.participant-assessment-empty {
+    display: grid;
+    gap: 20px;
+}
+
+.participant-assessment-empty h2,
+.participant-assessment-empty p {
+    margin: 0;
+}
+
+.participant-assessment-empty p {
+    color: var(--muted);
+}
+
+.participant-assessment-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.participant-assessment-table {
+    width: 100%;
+    min-width: 1080px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.participant-assessment-table caption {
+    padding: 14px 16px;
+    color: var(--muted);
+    text-align: left;
+}
+
+.participant-assessment-table th,
+.participant-assessment-table td {
+    padding: 13px 15px;
+    border-top: 1px solid var(--line);
+    vertical-align: top;
+}
+
+.participant-assessment-table thead th {
+    background: var(--surface-orange);
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.participant-assessment-table tbody th {
+    min-width: 130px;
+    font-weight: 700;
+}
+
+.participant-assessment-table tbody td {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.participant-assessment-table .participant-assessment-total {
+    color: var(--accent);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+html[data-theme='night'] .participant-assessment-table thead th {
+    background: #2a2a3d;
+    color: #f0eefc;
 }
 
 html[data-theme='night'] .admin-submission-avatar,
