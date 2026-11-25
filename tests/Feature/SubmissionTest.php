@@ -60,6 +60,20 @@ class SubmissionTest extends TestCase
         $this->withSession($session)->post(route('submission.store'))->assertForbidden();
     }
 
+    public function test_judge_cannot_open_or_create_a_participant_submission(): void
+    {
+        $session = [
+            'app_user' => [
+                'id' => $this->participantId,
+                'name' => 'Juri',
+                'role' => 'judge',
+            ],
+        ];
+
+        $this->withSession($session)->get(route('submission.show'))->assertForbidden();
+        $this->withSession($session)->post(route('submission.store'))->assertForbidden();
+    }
+
     public function test_participant_can_upload_a_prototype_and_save_submission_details(): void
     {
         Http::preventStrayRequests();

@@ -55,7 +55,7 @@ alter table public.users
     add constraint users_theme_id_fkey
         foreign key (theme_id) references public.themes(id) on delete set null,
     add constraint users_role_check
-        check (role in ('admin', 'participant'));
+        check (role in ('admin', 'participant', 'judge'));
 
 alter table public.users enable row level security;
 alter table public.themes enable row level security;

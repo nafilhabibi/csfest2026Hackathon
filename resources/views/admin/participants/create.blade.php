@@ -71,6 +71,7 @@
                 </div>
                 <nav class="admin-quick-links" aria-label="Navigasi pengelolaan">
                     <a href="#team-account">Akun tim <span aria-hidden="true">↓</span></a>
+                    <a href="#judge-account">Akun juri <span aria-hidden="true">↓</span></a>
                     <a href="#study-cases">Studi kasus <span aria-hidden="true">↓</span></a>
                     <a href="#team-assignments">Penetapan tema <span aria-hidden="true">↓</span></a>
                 </nav>
@@ -145,9 +146,47 @@
                 </form>
             </section>
 
-            <section class="dashboard-card management-card" id="study-cases">
+            <section class="dashboard-card management-card" id="judge-account">
                 <div class="management-card-heading">
                     <span class="management-step">02</span>
+                    <div>
+                        <h2 class="management-heading">Buat akun juri</h2>
+                        <p class="management-intro">Juri dapat melihat daftar dan detail submission, tanpa akses ke halaman lain.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('admin.judges.store') }}">
+                    @csrf
+
+                    <div class="form-field">
+                        <label for="judge_name">Nama juri</label>
+                        <input id="judge_name" name="judge_name" type="text" value="{{ old('judge_name') }}" maxlength="255" required>
+                        @error('judge_name')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-field">
+                        <label for="judge_password">Kata sandi awal</label>
+                        <input id="judge_password" name="judge_password" type="password" minlength="8" maxlength="1024" required>
+                        @error('judge_password')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="form-field">
+                        <label for="judge_password_confirmation">Konfirmasi kata sandi</label>
+                        <input id="judge_password_confirmation" name="judge_password_confirmation" type="password" minlength="8" maxlength="1024" required>
+                    </div>
+
+                    <button class="button auth-submit" type="submit">
+                        Buat akun juri <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+            </section>
+
+            <section class="dashboard-card management-card" id="study-cases">
+                <div class="management-card-heading">
+                    <span class="management-step">03</span>
                     <div>
                         <h2 class="management-heading">Tambah studi kasus</h2>
                         <p class="management-intro">Satu studi kasus dapat digunakan oleh beberapa tim.</p>
@@ -183,7 +222,7 @@
             <div class="management-section-heading">
                 <div>
                     <div class="management-card-heading">
-                        <span class="management-step">03</span>
+                        <span class="management-step">04</span>
                         <div>
                             <h2 class="management-heading">Daftar studi kasus</h2>
                             <p class="management-intro">Perbarui nama atau deskripsi tanpa menghapus penugasan tim.</p>
@@ -218,7 +257,7 @@
             <div class="management-section-heading">
                 <div>
                     <div class="management-card-heading">
-                        <span class="management-step">04</span>
+                        <span class="management-step">05</span>
                         <div>
                             <h2 class="management-heading">Penetapan tema per tim</h2>
                             <p class="management-intro">Tetapkan atau ubah studi kasus untuk setiap tim.</p>

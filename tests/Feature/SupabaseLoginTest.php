@@ -82,6 +82,34 @@ class SupabaseLoginTest extends TestCase
             ->assertSee('Innovating Integrated Digital Solutions for Better Campus Life');
     }
 
+    public function test_judge_login_redirects_to_submission_review_and_denies_the_dashboard(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
+                'id' => 'judge-123',
+                'name' => 'Juri Satu',
+                'login_name' => 'juri satu',
+                'password_hash' => Hash::make('secret-password'),
+                'role' => 'judge',
+            ]]),
+        ]);
+
+        $this->post(route('login.store'), [
+            'team_name' => 'Juri Satu',
+            'password' => 'secret-password',
+        ])->assertRedirect(route('admin.submissions.index'))
+            ->assertSessionHas('app_user', [
+                'id' => 'judge-123',
+                'name' => 'Juri Satu',
+                'role' => 'judge',
+            ]);
+
+        $this->get(route('login'))->assertRedirect(route('admin.submissions.index'));
+        $this->get(route('home'))->assertRedirect(route('admin.submissions.index'));
+        $this->get(route('dashboard'))->assertForbidden();
+    }
+
     public function test_user_can_sign_in_by_team_name_when_supabase_has_not_been_migrated(): void
     {
         Http::preventStrayRequests();

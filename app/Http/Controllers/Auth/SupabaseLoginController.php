@@ -15,7 +15,13 @@ class SupabaseLoginController extends Controller
 {
     public function showLogin(Request $request): View|RedirectResponse
     {
-        if (is_array($request->session()->get('app_user'))) {
+        $user = $request->session()->get('app_user');
+
+        if (is_array($user)) {
+            if (($user['role'] ?? null) === 'judge') {
+                return redirect()->route('admin.submissions.index');
+            }
+
             return redirect()->route('dashboard');
         }
 
@@ -115,11 +121,16 @@ class SupabaseLoginController extends Controller
         }
 
         $request->session()->regenerate();
+        $role = $this->resolveRole($user);
         $request->session()->put('app_user', [
             'id' => $userId,
             'name' => $user['name'],
-            'role' => $this->resolveRole($user),
+            'role' => $role,
         ]);
+
+        if ($role === 'judge') {
+            return redirect()->route('admin.submissions.index');
+        }
 
         return redirect()->intended(route('dashboard'));
     }
@@ -131,7 +142,7 @@ class SupabaseLoginController extends Controller
     {
         $role = $user['role'] ?? null;
 
-        return $role === 'admin' ? 'admin' : 'participant';
+        return in_array($role, ['admin', 'judge'], true) ? $role : 'participant';
     }
 
     public function logout(Request $request): RedirectResponse

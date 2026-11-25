@@ -73,7 +73,7 @@ alter table public.users
 
 alter table public.users
     add constraint users_role_check
-    check (role in ('admin', 'participant'));
+    check (role in ('admin', 'participant', 'judge'));
 
 alter table public.users enable row level security;
 alter table public.themes enable row level security;

@@ -3,19 +3,26 @@
 @section('title', 'Submission tim')
 
 @section('content')
+    @php
+        $isAdmin = session('app_user.role') === 'admin';
+        $userName = session('app_user.name', 'Pengguna');
+    @endphp
+
     <header class="site-header dashboard-site-header portal-site-header">
-        <a class="brand" href="{{ route('dashboard') }}" aria-label="CSFEST2026 Dashboard">
+        <a class="brand" href="{{ $isAdmin ? route('dashboard') : route('admin.submissions.index') }}" aria-label="CSFEST2026">
             <img class="brand-logo" src="{{ asset('images/csfest2026-logo.png') }}" alt="">
         </a>
-        <nav class="nav-links" aria-label="Navigasi admin">
-            <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
-            <a class="dashboard-nav-link" href="{{ route('admin.participants.create') }}">Pusat pengelolaan</a>
+        <nav class="nav-links" aria-label="{{ $isAdmin ? 'Navigasi admin' : 'Navigasi juri' }}">
+            @if ($isAdmin)
+                <a class="dashboard-nav-link" href="{{ route('dashboard') }}">Dashboard</a>
+                <a class="dashboard-nav-link" href="{{ route('admin.participants.create') }}">Pusat pengelolaan</a>
+            @endif
             <a class="dashboard-nav-link dashboard-nav-link-active" href="{{ route('admin.submissions.index') }}" aria-current="page">Submission</a>
         </nav>
         <div class="dashboard-nav-actions">
             <span class="dashboard-nav-user">
-                <span class="dashboard-nav-avatar" aria-hidden="true">A</span>
-                <span>Panitia</span>
+                <span class="dashboard-nav-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($userName, 0, 1)) }}</span>
+                <span>{{ $userName }}</span>
             </span>
             <button class="button button-outline button-small theme-toggle" type="button" data-theme-toggle aria-pressed="false">
                 <span aria-hidden="true" data-theme-icon>☾</span>
@@ -31,7 +38,7 @@
     <main class="dashboard-page admin-page admin-submissions-page">
         <div class="dashboard-top">
             <div>
-                <p class="eyebrow"><span class="eyebrow-mark"></span> Administrasi hackathon</p>
+                <p class="eyebrow"><span class="eyebrow-mark"></span> {{ $isAdmin ? 'Administrasi hackathon' : 'Penilaian hackathon' }}</p>
                 <h1 class="dashboard-greeting">Submission tim</h1>
                 <p class="dashboard-subtitle">Lihat tim yang sudah mengirimkan submission dan buka detailnya.</p>
             </div>

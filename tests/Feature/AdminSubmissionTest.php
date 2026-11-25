@@ -81,6 +81,46 @@ class AdminSubmissionTest extends TestCase
             ->assertSee('https://csfest-test.supabase.co/storage/v1/object/sign/Submission/prototype.png?token=private', false);
     }
 
+    public function test_judge_can_review_submissions_without_admin_navigation(): void
+    {
+        $this->createSubmission('team-123');
+        Http::preventStrayRequests();
+        Http::fake([
+            'csfest-test.supabase.co/rest/v1/users*' => Http::response([[
+                'id' => 'team-123',
+                'name' => 'Tim Merah',
+                'theme' => ['title' => 'Kampus Terhubung'],
+            ]]),
+            'csfest-test.supabase.co/storage/v1/object/sign/Submission/*' => Http::response([
+                'signedURL' => 'https://csfest-test.supabase.co/storage/v1/object/sign/Submission/prototype.png?token=private',
+            ]),
+        ]);
+        $judgeSession = [
+            'app_user' => [
+                'id' => 'judge-123',
+                'name' => 'Juri Satu',
+                'role' => 'judge',
+            ],
+        ];
+
+        $this->withSession($judgeSession)
+            ->get(route('admin.submissions.index'))
+            ->assertOk()
+            ->assertSee('Tim Merah')
+            ->assertSee('Juri Satu')
+            ->assertSee('href="'.route('admin.submissions.show', 'team-123').'"', false)
+            ->assertDontSee('Dashboard')
+            ->assertDontSee('Pusat pengelolaan');
+
+        $this->withSession($judgeSession)
+            ->get(route('admin.submissions.show', 'team-123'))
+            ->assertOk()
+            ->assertSee('Kampus Terhubung')
+            ->assertSee('Juri Satu')
+            ->assertDontSee('Dashboard')
+            ->assertDontSee('Pusat pengelolaan');
+    }
+
     public function test_participant_cannot_access_admin_submission_pages(): void
     {
         $response = $this->withSession([

@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\EnsureSupabaseAdmin;
 use App\Http\Middleware\EnsureSupabaseAuthenticated;
+use App\Http\Middleware\EnsureSupabaseDashboardAccess;
 use App\Http\Middleware\EnsureSupabaseParticipant;
+use App\Http\Middleware\EnsureSupabaseSubmissionReviewer;
 use App\Http\Middleware\EnsureSupabaseThemeAssigned;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'supabase.auth' => EnsureSupabaseAuthenticated::class,
             'supabase.admin' => EnsureSupabaseAdmin::class,
             'supabase.participant' => EnsureSupabaseParticipant::class,
+            'supabase.dashboard' => EnsureSupabaseDashboardAccess::class,
+            'supabase.submission-reviewer' => EnsureSupabaseSubmissionReviewer::class,
             'supabase.theme-assigned' => EnsureSupabaseThemeAssigned::class,
         ]);
     })
