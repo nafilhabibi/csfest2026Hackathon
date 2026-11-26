@@ -25,7 +25,6 @@
     <main class="auth-shell auth-page">
         <section class="auth-aside">
             <div class="auth-aside-copy">
-                <span class="eyebrow"><span class="eyebrow-mark"></span> Computer Science Fest</span>
                 <h1>Ide terbaikmu bisa mengubah <em>kampus.</em></h1>
                 <p>Masuk ke portal CSFEST2026 untuk melanjutkan perjalananmu membangun solusi digital terintegrasi.</p>
             </div>
@@ -34,7 +33,6 @@
 
         <section class="auth-form-wrap">
             <div class="auth-form">
-                <span class="eyebrow"><span class="eyebrow-mark"></span> Portal peserta</span>
                 <h2>Selamat datang</h2>
                 <p class="auth-form-intro">Masuk menggunakan nama tim dan kata sandi untuk mengakses dashboard CSFEST2026.</p>
 
@@ -65,14 +63,24 @@
 
                     <div class="form-field">
                         <label for="password">Kata sandi</label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            placeholder="Masukkan kata sandi"
-                            autocomplete="current-password"
-                            required
-                        >
+                        <div class="input-wrap password-input-wrap">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                placeholder="Masukkan kata sandi"
+                                autocomplete="current-password"
+                                required
+                            >
+                            <button
+                                class="password-toggle"
+                                type="button"
+                                data-password-toggle
+                                aria-controls="password"
+                                aria-label="Tampilkan kata sandi"
+                                aria-pressed="false"
+                            >Tampilkan</button>
+                        </div>
                         @error('password')
                             <p class="form-error">{{ $message }}</p>
                         @enderror

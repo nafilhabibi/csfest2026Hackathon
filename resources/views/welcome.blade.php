@@ -26,7 +26,6 @@
     <main class="landing-page">
         <section class="hero" id="tentang">
             <div class="hero-copy">
-                <span class="eyebrow"><span class="eyebrow-mark"></span> Computer Science Fest · Hackathon 2026</span>
                 <h1>Build a better campus, <em>together.</em></h1>
                 <p class="hero-description" id="tema">
                     Innovating Integrated Digital Solutions for Better Campus Life.

@@ -44,7 +44,8 @@ class SubmissionTest extends TestCase
             ->assertSee('data-prototype-preview', false)
             ->assertSee('Another')
             ->assertSee('5 MB')
-            ->assertSee('30 MB');
+            ->assertSee('30 MB')
+            ->assertSee('PPT, PPTX');
     }
 
     public function test_closed_submission_form_is_read_only_for_participant(): void
@@ -179,6 +180,76 @@ class SubmissionTest extends TestCase
             && str_contains($request->url(), '/storage/v1/object/Submission/participants/'.$this->participantId.'/')
             && $request->hasHeader('apikey', 'test-service-role-key')
             && $request->hasHeader('Content-Type', 'image/png'));
+    }
+
+    public function test_participant_can_upload_a_ppt_presentation(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            ...$this->assignedThemeFake(),
+            'csfest-test.supabase.co/storage/v1/object/Submission/participants/*' => Http::response([
+                'Key' => 'Submission/participants/team/presentation.ppt',
+            ]),
+        ]);
+
+        $response = $this->withSession($this->participantSession())
+            ->post(route('submission.store'), [
+                'submitter_name' => 'Alya',
+                'github_link' => 'https://github.com/csfest/team-app',
+                'prototype' => UploadedFile::fake()
+                    ->create('presentation.ppt', 450)
+                    ->mimeType('application/vnd.ms-powerpoint'),
+            ]);
+
+        $response->assertRedirect(route('submission.show'))
+            ->assertSessionHas('status', 'Submission berhasil disimpan.');
+
+        $submission = DB::table('submissions')->where('participant_id', $this->participantId)->first();
+        $this->assertNotNull($submission);
+        $this->assertSame('application/vnd.ms-powerpoint', $submission->prototype_mime_type);
+        $this->assertStringEndsWith('.ppt', $submission->prototype_path);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '.ppt')
+            && $request->hasHeader('Content-Type', 'application/vnd.ms-powerpoint'));
+    }
+
+    public function test_participant_can_upload_a_pptx_presentation(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            ...$this->assignedThemeFake(),
+            'csfest-test.supabase.co/storage/v1/object/Submission/participants/*' => Http::response([
+                'Key' => 'Submission/participants/team/presentation.pptx',
+            ]),
+        ]);
+
+        $response = $this->withSession($this->participantSession())
+            ->post(route('submission.store'), [
+                'submitter_name' => 'Alya',
+                'github_link' => 'https://github.com/csfest/team-app',
+                'prototype' => UploadedFile::fake()
+                    ->create('presentation.pptx', 450)
+                    ->mimeType('application/vnd.openxmlformats-officedocument.presentationml.presentation'),
+            ]);
+
+        $response->assertRedirect(route('submission.show'))
+            ->assertSessionHas('status', 'Submission berhasil disimpan.');
+
+        $submission = DB::table('submissions')->where('participant_id', $this->participantId)->first();
+        $this->assertNotNull($submission);
+        $this->assertSame(
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            $submission->prototype_mime_type,
+        );
+        $this->assertStringEndsWith('.pptx', $submission->prototype_path);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '.pptx')
+            && $request->hasHeader(
+                'Content-Type',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            ));
     }
 
     public function test_participant_can_update_submission_details_without_replacing_the_prototype(): void
@@ -338,7 +409,7 @@ class SubmissionTest extends TestCase
         $response->assertRedirect(route('submission.show'))
             ->assertSessionHasErrors([
                 'github_link' => 'Masukkan tautan repository dari github.com.',
-                'prototype' => 'Upload gambar atau video prototype.',
+                'prototype' => 'Upload gambar, video, atau presentasi prototype.',
             ]);
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), '/storage/v1/object/'));
     }

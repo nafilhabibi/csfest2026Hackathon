@@ -17,6 +17,24 @@ function setTheme(theme) {
 
 setTheme(document.documentElement.dataset.theme === 'night' ? 'night' : 'light');
 
+for (const button of document.querySelectorAll('[data-password-toggle]')) {
+    const inputId = button.getAttribute('aria-controls');
+    const passwordInput = inputId ? document.getElementById(inputId) : null;
+
+    if (!(button instanceof HTMLButtonElement) || !(passwordInput instanceof HTMLInputElement)) {
+        continue;
+    }
+
+    button.addEventListener('click', () => {
+        const isVisible = passwordInput.type === 'password';
+
+        passwordInput.type = isVisible ? 'text' : 'password';
+        button.textContent = isVisible ? 'Sembunyikan' : 'Tampilkan';
+        button.setAttribute('aria-label', isVisible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+        button.setAttribute('aria-pressed', String(isVisible));
+    });
+}
+
 for (const button of themeToggleButtons) {
     button.addEventListener('click', () => {
         const nextTheme = document.documentElement.dataset.theme === 'night' ? 'light' : 'night';

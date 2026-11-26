@@ -148,7 +148,10 @@
 
                     <div class="form-field">
                         <label for="password">Kata sandi awal</label>
-                        <input id="password" name="password" type="password" minlength="8" maxlength="1024" required>
+                        <div class="input-wrap password-input-wrap">
+                            <input id="password" name="password" type="password" minlength="8" maxlength="1024" required>
+                            <button class="password-toggle" type="button" data-password-toggle aria-controls="password" aria-label="Tampilkan kata sandi" aria-pressed="false">Tampilkan</button>
+                        </div>
                         @error('password')
                             <p class="form-error">{{ $message }}</p>
                         @enderror
@@ -156,7 +159,10 @@
 
                     <div class="form-field">
                         <label for="password_confirmation">Konfirmasi kata sandi</label>
-                        <input id="password_confirmation" name="password_confirmation" type="password" minlength="8" maxlength="1024" required>
+                        <div class="input-wrap password-input-wrap">
+                            <input id="password_confirmation" name="password_confirmation" type="password" minlength="8" maxlength="1024" required>
+                            <button class="password-toggle" type="button" data-password-toggle aria-controls="password_confirmation" aria-label="Tampilkan kata sandi" aria-pressed="false">Tampilkan</button>
+                        </div>
                     </div>
 
                     <div class="form-field">
@@ -201,7 +207,10 @@
 
                     <div class="form-field">
                         <label for="judge_password">Kata sandi awal</label>
-                        <input id="judge_password" name="judge_password" type="password" minlength="8" maxlength="1024" required>
+                        <div class="input-wrap password-input-wrap">
+                            <input id="judge_password" name="judge_password" type="password" minlength="8" maxlength="1024" required>
+                            <button class="password-toggle" type="button" data-password-toggle aria-controls="judge_password" aria-label="Tampilkan kata sandi" aria-pressed="false">Tampilkan</button>
+                        </div>
                         @error('judge_password')
                             <p class="form-error">{{ $message }}</p>
                         @enderror
@@ -209,7 +218,10 @@
 
                     <div class="form-field">
                         <label for="judge_password_confirmation">Konfirmasi kata sandi</label>
-                        <input id="judge_password_confirmation" name="judge_password_confirmation" type="password" minlength="8" maxlength="1024" required>
+                        <div class="input-wrap password-input-wrap">
+                            <input id="judge_password_confirmation" name="judge_password_confirmation" type="password" minlength="8" maxlength="1024" required>
+                            <button class="password-toggle" type="button" data-password-toggle aria-controls="judge_password_confirmation" aria-label="Tampilkan kata sandi" aria-pressed="false">Tampilkan</button>
+                        </div>
                     </div>
 
                     <button class="button auth-submit" type="submit">

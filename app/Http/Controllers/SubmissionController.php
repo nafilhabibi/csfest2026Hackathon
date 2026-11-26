@@ -127,13 +127,15 @@ class SubmissionController extends Controller
                     'video/mp4',
                     'video/quicktime',
                     'video/webm',
+                    'application/vnd.ms-powerpoint',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 ])->max($maximumFileSize),
             ],
             'another' => ['nullable', 'string', 'max:5000'],
         ], [
-            'prototype.required' => 'Upload gambar atau video prototype.',
+            'prototype.required' => 'Upload gambar, video, atau presentasi prototype.',
             'prototype.max' => 'Ukuran prototype melebihi batas untuk jenis file tersebut.',
-            'prototype.file' => 'Prototype harus berupa file gambar atau video yang valid.',
+            'prototype.file' => 'Prototype harus berupa file gambar, video, atau presentasi yang valid.',
         ]);
 
         $prototypePath = $existingSubmission['prototype_path'] ?? null;
@@ -229,6 +231,8 @@ class SubmissionController extends Controller
             'video/mp4' => 'mp4',
             'video/quicktime' => 'mov',
             'video/webm' => 'webm',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
             default => null,
         };
     }

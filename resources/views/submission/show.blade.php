@@ -62,7 +62,7 @@
                     <span class="submission-icon" aria-hidden="true">↗</span>
                     <div>
                         <h2>{{ $submission ? 'Perbarui submission' : 'Kirim submission' }}</h2>
-                        <p>Lengkapi detail berikut. File gambar maksimal 5 MB dan video maksimal 30 MB.</p>
+                        <p>Lengkapi detail berikut. File gambar maksimal 5 MB; video dan presentasi maksimal 30 MB.</p>
                     </div>
                 </div>
 
@@ -109,15 +109,15 @@
                             id="prototype"
                             name="prototype"
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
+                            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,.ppt,.pptx"
                             aria-describedby="prototype-help prototype-status"
                             @required(! $submission)
                         >
                         <label class="submission-file-picker" for="prototype">
                             <span class="submission-file-icon" aria-hidden="true">＋</span>
                             <span>
-                                <strong>{{ $submission ? 'Pilih file baru untuk mengganti prototype' : 'Pilih gambar atau video prototype' }}</strong>
-                                <small>JPG, PNG, WEBP, GIF · MP4, MOV, WEBM</small>
+                                <strong>{{ $submission ? 'Pilih file baru untuk mengganti prototype' : 'Pilih gambar, video, atau presentasi prototype' }}</strong>
+                                <small>JPG, PNG, WEBP, GIF · MP4, MOV, WEBM · PPT, PPTX</small>
                             </span>
                         </label>
                         <p class="submission-file-help" id="prototype-help">Pilih satu file. Nama dan pratinjau gambar akan muncul setelah file dipilih.</p>

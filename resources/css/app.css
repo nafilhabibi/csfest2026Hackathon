@@ -605,6 +605,35 @@ input {
     position: relative;
 }
 
+.password-input-wrap input {
+    padding-right: 100px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    min-height: 32px;
+    padding: 0 4px;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--action);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.password-toggle:hover {
+    color: var(--action-hover);
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+}
+
 .form-field input,
 .form-field select,
 .form-field textarea {
