@@ -34,11 +34,10 @@ class GoogleSheetsAssessmentTest extends TestCase
             'team-1',
             'Tim Merah',
             [
-                'case_fit' => '5',
-                'innovation' => '4',
-                'feasibility' => '3',
-                'solution_design' => '4',
-                'prototype' => '5',
+                'innovation_relevance' => '5',
+                'technical_implementation' => '4',
+                'ux_design' => '3',
+                'presentation_pitching' => '5',
             ],
             'Ide kuat.',
         );
@@ -47,15 +46,15 @@ class GoogleSheetsAssessmentTest extends TestCase
             && str_contains($request->url(), ':append')
             && $request->hasHeader('Authorization', 'Bearer google-access-token')
             && $request['values'][0] === [
-                'Juri Satu', 'Tim Merah', 5, 4, 3, 4, 5, 21, 'Ide kuat.', 'judge-1', 'team-1',
+                'Juri Satu', 'Tim Merah', 5, 4, 3, 5, 86, 'Ide kuat.', 'judge-1', 'team-1',
             ]);
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && str_contains($request->url(), ':batchUpdate')
             && $request['requests'][0]['updateDimensionProperties']['range'] === [
                 'sheetId' => 17,
                 'dimension' => 'COLUMNS',
-                'startIndex' => 9,
-                'endIndex' => 11,
+                'startIndex' => 8,
+                'endIndex' => 10,
             ]);
     }
 
@@ -84,17 +83,16 @@ class GoogleSheetsAssessmentTest extends TestCase
             'team-1',
             'Tim Merah',
             [
-                'case_fit' => 1,
-                'innovation' => 1,
-                'feasibility' => 1,
-                'solution_design' => 1,
-                'prototype' => 1,
+                'innovation_relevance' => 1,
+                'technical_implementation' => 1,
+                'ux_design' => 1,
+                'presentation_pitching' => 1,
             ],
             null,
         );
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT'
-            && str_contains($request->url(), 'A1%3AK1')
+            && str_contains($request->url(), 'A1%3AJ1')
             && $request['values'][0] === $this->assessmentHeaders());
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && str_contains($request->url(), ':batchUpdate'));
@@ -118,7 +116,7 @@ class GoogleSheetsAssessmentTest extends TestCase
                         'values' => [
                             $this->assessmentHeaders(),
                             [
-                                'Juri Satu', 'Tim Merah', 3, 3, 3, 3, 3, 15, '', 'judge-1', 'team-1',
+                                'Juri Satu', 'Tim Merah', 3, 3, 3, 3, 60, '', 'judge-1', 'team-1',
                             ],
                         ],
                     ]);
@@ -134,19 +132,18 @@ class GoogleSheetsAssessmentTest extends TestCase
             'team-1',
             'Tim Merah',
             [
-                'case_fit' => 5,
-                'innovation' => 5,
-                'feasibility' => 4,
-                'solution_design' => 4,
-                'prototype' => 5,
+                'innovation_relevance' => 5,
+                'technical_implementation' => 5,
+                'ux_design' => 4,
+                'presentation_pitching' => 5,
             ],
             null,
         );
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PUT'
-            && str_contains($request->url(), 'A2%3AK2')
+            && str_contains($request->url(), 'A2%3AJ2')
             && $request['values'][0] === [
-                'Juri Satu', 'Tim Merah', 5, 5, 4, 4, 5, 23, '', 'judge-1', 'team-1',
+                'Juri Satu', 'Tim Merah', 5, 5, 4, 5, 96, '', 'judge-1', 'team-1',
             ]);
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), ':append'));
     }
@@ -165,8 +162,8 @@ class GoogleSheetsAssessmentTest extends TestCase
                 return Http::response([
                     'values' => [
                         $this->assessmentHeaders(),
-                        ['Juri Satu', 'Tim Merah', 5, 4, 3, 4, 5, 21, 'Ide kuat.', 'judge-1', 'team-1'],
-                        ['Juri Dua', 'Tim Biru', 3, 3, 3, 3, 3, 15, '', 'judge-2', 'team-2'],
+                        ['Juri Satu', 'Tim Merah', 5, 4, 3, 4, 80, 'Ide kuat.', 'judge-1', 'team-1'],
+                        ['Juri Dua', 'Tim Biru', 3, 3, 3, 3, 60, '', 'judge-2', 'team-2'],
                     ],
                 ]);
             },
@@ -181,13 +178,12 @@ class GoogleSheetsAssessmentTest extends TestCase
             'team_id' => 'team-1',
             'team_name' => 'Tim Merah',
             'scores' => [
-                'case_fit' => 5,
-                'innovation' => 4,
-                'feasibility' => 3,
-                'solution_design' => 4,
-                'prototype' => 5,
+                'innovation_relevance' => 5,
+                'technical_implementation' => 4,
+                'ux_design' => 3,
+                'presentation_pitching' => 4,
             ],
-            'total' => 21,
+            'total' => 80,
             'comment' => 'Ide kuat.',
         ], $assessments['team-1']);
     }
@@ -206,9 +202,9 @@ class GoogleSheetsAssessmentTest extends TestCase
                 return Http::response([
                     'values' => [
                         $this->assessmentHeaders(),
-                        ['Juri Satu', 'Tim Merah', 5, 4, 3, 4, 5, 21, 'Solusi kuat.', 'judge-1', 'team-1'],
-                        ['Juri Dua', 'Tim Merah', 4, 4, 4, 4, 4, 20, '', 'judge-2', 'team-1'],
-                        ['Juri Tiga', 'Tim Biru', 1, 1, 1, 1, 1, 5, 'Tim lain.', 'judge-3', 'team-2'],
+                        ['Juri Satu', 'Tim Merah', 5, 4, 3, 4, 80, 'Solusi kuat.', 'judge-1', 'team-1'],
+                        ['Juri Dua', 'Tim Merah', 4, 4, 4, 4, 80, '', 'judge-2', 'team-1'],
+                        ['Juri Tiga', 'Tim Biru', 1, 1, 1, 1, 20, 'Tim lain.', 'judge-3', 'team-2'],
                     ],
                 ]);
             },
@@ -223,13 +219,12 @@ class GoogleSheetsAssessmentTest extends TestCase
                 'team_id' => 'team-1',
                 'team_name' => 'Tim Merah',
                 'scores' => [
-                    'case_fit' => 5,
-                    'innovation' => 4,
-                    'feasibility' => 3,
-                    'solution_design' => 4,
-                    'prototype' => 5,
+                    'innovation_relevance' => 5,
+                    'technical_implementation' => 4,
+                    'ux_design' => 3,
+                    'presentation_pitching' => 4,
                 ],
-                'total' => 21,
+                'total' => 80,
                 'comment' => 'Solusi kuat.',
             ],
             [
@@ -238,13 +233,12 @@ class GoogleSheetsAssessmentTest extends TestCase
                 'team_id' => 'team-1',
                 'team_name' => 'Tim Merah',
                 'scores' => [
-                    'case_fit' => 4,
-                    'innovation' => 4,
-                    'feasibility' => 4,
-                    'solution_design' => 4,
-                    'prototype' => 4,
+                    'innovation_relevance' => 4,
+                    'technical_implementation' => 4,
+                    'ux_design' => 4,
+                    'presentation_pitching' => 4,
                 ],
-                'total' => 20,
+                'total' => 80,
                 'comment' => '',
             ],
         ], $assessments);
@@ -260,15 +254,14 @@ class GoogleSheetsAssessmentTest extends TestCase
             ],
         ])->post(route('admin.submissions.assessment.store', 'team-1'), [
             'scores' => [
-                'case_fit' => 6,
-                'innovation' => 4,
-                'feasibility' => 3,
-                'solution_design' => 4,
-                'prototype' => 5,
+                'innovation_relevance' => 6,
+                'technical_implementation' => 4,
+                'ux_design' => 3,
+                'presentation_pitching' => 5,
             ],
         ]);
 
-        $response->assertSessionHasErrors(['scores.case_fit']);
+        $response->assertSessionHasErrors(['scores.innovation_relevance']);
     }
 
     public function test_assessment_endpoint_rejects_unexpected_criterion_keys(): void
@@ -281,11 +274,10 @@ class GoogleSheetsAssessmentTest extends TestCase
             ],
         ])->post(route('admin.submissions.assessment.store', 'team-1'), [
             'scores' => [
-                'case_fit' => 3,
-                'innovation' => 3,
-                'feasibility' => 3,
-                'solution_design' => 3,
-                'prototype' => 3,
+                'innovation_relevance' => 3,
+                'technical_implementation' => 3,
+                'ux_design' => 3,
+                'presentation_pitching' => 3,
                 'role' => 'admin',
             ],
         ]);
@@ -333,11 +325,10 @@ class GoogleSheetsAssessmentTest extends TestCase
         return [
             'Nama Juri',
             'Nama Tim',
-            'Kesesuaian Solusi dengan Studi Kasus',
-            'Inovasi dan Kreativitas Ide',
-            'Kelayakan Implementasi',
-            'Kualitas Rancangan Solusi',
-            'Kualitas Prototype Awal',
+            'Inovasi & Relevansi Solusi (20%)',
+            'Implementasi Teknis & Fungsionalitas (30%)',
+            'Desain Antarmuka & UX (20%)',
+            'Presentasi & Pitching (30%)',
             'Total Nilai',
             'Komentar',
             'ID Juri Internal',
@@ -357,7 +348,7 @@ class GoogleSheetsAssessmentTest extends TestCase
                     'title' => 'Penilaian',
                 ],
                 'data' => [[
-                    'startColumn' => 9,
+                    'startColumn' => 8,
                     'columnMetadata' => [
                         ['hiddenByUser' => $idsHidden],
                         ['hiddenByUser' => $idsHidden],

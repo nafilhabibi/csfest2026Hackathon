@@ -51,20 +51,20 @@
                     <span class="submission-icon" aria-hidden="true">✓</span>
                     <div>
                         <h2>Hasil dari para juri</h2>
-                        <p>Setiap baris berisi penilaian dari satu juri. Tiap aspek memiliki bobot yang sama.</p>
+                        <p>Setiap baris berisi penilaian berbobot dari satu juri.</p>
                     </div>
                 </div>
 
                 <div class="participant-assessment-table-wrap" role="region" aria-label="Tabel penilaian juri" tabindex="0">
                     <table class="participant-assessment-table">
-                        <caption>Nilai diberikan pada skala 1–5. Total adalah jumlah lima aspek, maksimum 25.</caption>
+                        <caption>Nilai tiap aspek diberikan pada skala 1–5 dan dihitung berdasarkan bobotnya. Nilai akhir maksimum 100.</caption>
                         <thead>
                             <tr>
                                 <th scope="col">Juri</th>
-                                @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $label)
-                                    <th scope="col">{{ $label }}</th>
+                                @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $details)
+                                    <th scope="col">{{ $details['label'] }} ({{ $details['weight'] }}%)</th>
                                 @endforeach
-                                <th scope="col">Total</th>
+                                <th scope="col">Nilai / 100</th>
                                 <th scope="col">Komentar</th>
                             </tr>
                         </thead>
@@ -72,10 +72,10 @@
                             @foreach ($assessments as $assessment)
                                 <tr>
                                     <th scope="row">{{ $assessment['judge_name'] }}</th>
-                                    @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $criterion => $label)
+                                    @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $criterion => $details)
                                         <td>{{ $assessment['scores'][$criterion] }}</td>
                                     @endforeach
-                                    <td class="participant-assessment-total">{{ $assessment['total'] }} / 25</td>
+                                    <td class="participant-assessment-total">{{ $assessment['total'] }} / 100</td>
                                     <td>{{ filled($assessment['comment']) ? $assessment['comment'] : '—' }}</td>
                                 </tr>
                             @endforeach

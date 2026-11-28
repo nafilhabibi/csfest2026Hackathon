@@ -63,11 +63,11 @@
                     <div>
                         <span class="admin-submission-detail-label">Penilaian juri</span>
                         <h2>{{ $assessment ? 'Perbarui penilaian' : 'Beri penilaian' }}</h2>
-                        <p>Nilai setiap aspek dari 1 sampai 5. Semua aspek memiliki bobot yang sama.</p>
+                        <p>Nilai setiap aspek dari 1 sampai 5. Nilai akhir dihitung berdasarkan bobot dan ditampilkan dalam skala 100.</p>
                     </div>
                     @if ($assessment)
                         <span class="admin-submission-badge admin-submission-badge-submitted">
-                            <span aria-hidden="true"></span> Total {{ $assessment['total'] }} / 25
+                            <span aria-hidden="true"></span> Nilai {{ $assessment['total'] }} / 100
                         </span>
                     @endif
                 </div>
@@ -94,9 +94,10 @@
                 <form method="POST" action="{{ route('admin.submissions.assessment.store', $submission->participant_id) }}">
                     @csrf
 
-                    @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $criterion => $label)
+                    @foreach (\App\Services\GoogleSheetsAssessmentClient::CRITERIA as $criterion => $details)
                         <div class="form-field">
-                            <label for="score_{{ $criterion }}">{{ $label }}</label>
+                            <label for="score_{{ $criterion }}">{{ $details['label'] }} ({{ $details['weight'] }}%)</label>
+                            <p>{{ $details['indicator'] }}</p>
                             <select id="score_{{ $criterion }}" name="scores[{{ $criterion }}]" required>
                                 <option value="">Pilih nilai</option>
                                 @foreach (\App\Services\GoogleSheetsAssessmentClient::SCORE_LABELS as $score => $scoreLabel)

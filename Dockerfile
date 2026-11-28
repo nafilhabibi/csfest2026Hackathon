@@ -6,6 +6,8 @@ RUN install-php-extensions \
     pdo_pgsql \
     zip
 
+RUN printf 'upload_max_filesize=32M\npost_max_size=35M\n' > "$PHP_INI_DIR/conf.d/uploads.ini"
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app

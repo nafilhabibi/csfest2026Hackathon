@@ -117,6 +117,9 @@ class AdminSubmissionTest extends TestCase
             ->assertOk()
             ->assertSee('Kampus Terhubung')
             ->assertSee('Juri Satu')
+            ->assertSee('Inovasi &amp; Relevansi Solusi (20%)', false)
+            ->assertSee('Implementasi Teknis &amp; Fungsionalitas (30%)', false)
+            ->assertSee('Kelengkapan fitur utama, stabilitas sistem saat demo', false)
             ->assertDontSee('Dashboard')
             ->assertDontSee('Pusat pengelolaan');
     }

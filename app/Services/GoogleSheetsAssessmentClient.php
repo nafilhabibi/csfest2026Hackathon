@@ -11,11 +11,26 @@ use JsonException;
 class GoogleSheetsAssessmentClient
 {
     public const CRITERIA = [
-        'case_fit' => 'Kesesuaian solusi dengan studi kasus',
-        'innovation' => 'Inovasi dan kreativitas ide',
-        'feasibility' => 'Kelayakan implementasi',
-        'solution_design' => 'Kualitas rancangan solusi',
-        'prototype' => 'Kualitas prototype awal',
+        'innovation_relevance' => [
+            'label' => 'Inovasi & Relevansi Solusi',
+            'indicator' => 'Kesesuaian dengan tema/track, orisinalitas ide, dan dampak nyata solusi bagi pengguna target.',
+            'weight' => 20,
+        ],
+        'technical_implementation' => [
+            'label' => 'Implementasi Teknis & Fungsionalitas',
+            'indicator' => 'Kelengkapan fitur utama, stabilitas sistem saat demo, kualitas kode, serta kompleksitas teknis.',
+            'weight' => 30,
+        ],
+        'ux_design' => [
+            'label' => 'Desain Antarmuka & UX',
+            'indicator' => 'Kemudahan penggunaan (usability), alur navigasi intuitif, dan kerapian desain visual.',
+            'weight' => 20,
+        ],
+        'presentation_pitching' => [
+            'label' => 'Presentasi & Pitching',
+            'indicator' => 'Kejelasan penyampaian materi, penguasaan produk, kerja sama tim, dan ketepatan menjawab pertanyaan juri.',
+            'weight' => 30,
+        ],
     ];
 
     public const SCORE_LABELS = [
@@ -29,11 +44,10 @@ class GoogleSheetsAssessmentClient
     private const HEADERS = [
         'Nama Juri',
         'Nama Tim',
-        'Kesesuaian Solusi dengan Studi Kasus',
-        'Inovasi dan Kreativitas Ide',
-        'Kelayakan Implementasi',
-        'Kualitas Rancangan Solusi',
-        'Kualitas Prototype Awal',
+        'Inovasi & Relevansi Solusi (20%)',
+        'Implementasi Teknis & Fungsionalitas (30%)',
+        'Desain Antarmuka & UX (20%)',
+        'Presentasi & Pitching (30%)',
         'Total Nilai',
         'Komentar',
         'ID Juri Internal',
@@ -64,7 +78,7 @@ class GoogleSheetsAssessmentClient
         $assessment = null;
 
         foreach ($this->rows() as $row) {
-            if (($row[9] ?? null) === $judgeId && ($row[10] ?? null) === $teamId) {
+            if (($row[8] ?? null) === $judgeId && ($row[9] ?? null) === $teamId) {
                 if ($assessment !== null) {
                     throw new GoogleSheetsException('Google Sheets contains duplicate assessment rows.');
                 }
@@ -84,11 +98,11 @@ class GoogleSheetsAssessmentClient
         $assessments = [];
 
         foreach ($this->rows() as $row) {
-            if (($row[9] ?? null) !== $judgeId) {
+            if (($row[8] ?? null) !== $judgeId) {
                 continue;
             }
 
-            $teamId = $row[10] ?? null;
+            $teamId = $row[9] ?? null;
             if (! is_string($teamId) || $teamId === '' || isset($assessments[$teamId])) {
                 throw new GoogleSheetsException('Google Sheets contains an invalid or duplicate assessment row.');
             }
@@ -108,11 +122,11 @@ class GoogleSheetsAssessmentClient
         $judgeIds = [];
 
         foreach ($this->rows() as $row) {
-            if (($row[10] ?? null) !== $teamId) {
+            if (($row[9] ?? null) !== $teamId) {
                 continue;
             }
 
-            $judgeId = $row[9] ?? null;
+            $judgeId = $row[8] ?? null;
             if (! is_string($judgeId) || $judgeId === '' || isset($judgeIds[$judgeId])) {
                 throw new GoogleSheetsException('Google Sheets contains an invalid or duplicate assessment row.');
             }
@@ -137,6 +151,7 @@ class GoogleSheetsAssessmentClient
     ): void {
         $rows = $this->rows();
         $scoreValues = [];
+        $validatedScores = [];
 
         foreach (array_keys(self::CRITERIA) as $criterion) {
             $score = $scores[$criterion] ?? null;
@@ -149,13 +164,14 @@ class GoogleSheetsAssessmentClient
             }
 
             $scoreValues[] = $score;
+            $validatedScores[$criterion] = $score;
         }
 
         $row = [
             $judgeName,
             $teamName,
             ...$scoreValues,
-            array_sum($scoreValues),
+            $this->weightedTotal($validatedScores),
             $comment ?? '',
             $judgeId,
             $teamId,
@@ -163,7 +179,7 @@ class GoogleSheetsAssessmentClient
 
         $matchingRow = null;
         foreach ($rows as $index => $existingRow) {
-            if (($existingRow[9] ?? null) === $judgeId && ($existingRow[10] ?? null) === $teamId) {
+            if (($existingRow[8] ?? null) === $judgeId && ($existingRow[9] ?? null) === $teamId) {
                 if ($matchingRow !== null) {
                     throw new GoogleSheetsException('Google Sheets contains duplicate assessment rows.');
                 }
@@ -205,7 +221,7 @@ class GoogleSheetsAssessmentClient
         }
 
         if ($values === []) {
-            $this->writeValues($this->worksheetCellsRange('A1:K1'), [self::HEADERS]);
+            $this->writeValues($this->worksheetCellsRange('A1:J1'), [self::HEADERS]);
             $this->hideInternalColumns();
 
             return [];
@@ -256,19 +272,34 @@ class GoogleSheetsAssessmentClient
             $scores[$criterion] = $score;
         }
 
-        if (! is_numeric($row[7] ?? null) || (int) $row[7] !== array_sum($scores)) {
+        $total = $this->weightedTotal($scores);
+        if (! is_numeric($row[6] ?? null) || (float) $row[6] !== (float) $total) {
             throw new GoogleSheetsException('Google Sheets contains an invalid assessment total.');
         }
 
         return [
-            'judge_id' => (string) $row[9],
+            'judge_id' => (string) $row[8],
             'judge_name' => (string) $row[0],
-            'team_id' => (string) $row[10],
+            'team_id' => (string) $row[9],
             'team_name' => (string) $row[1],
             'scores' => $scores,
-            'total' => (int) $row[7],
-            'comment' => (string) ($row[8] ?? ''),
+            'total' => $total,
+            'comment' => (string) ($row[7] ?? ''),
         ];
+    }
+
+    /**
+     * @param  array<string, int>  $scores
+     */
+    private function weightedTotal(array $scores): int
+    {
+        $total = 0;
+
+        foreach (self::CRITERIA as $criterion => $details) {
+            $total += intdiv($scores[$criterion] * $details['weight'], 5);
+        }
+
+        return $total;
     }
 
     /**
@@ -276,7 +307,7 @@ class GoogleSheetsAssessmentClient
      */
     private function updateRow(int $rowNumber, array $row): void
     {
-        $this->writeValues($this->worksheetCellsRange('A'.$rowNumber.':K'.$rowNumber), [$row]);
+        $this->writeValues($this->worksheetCellsRange('A'.$rowNumber.':J'.$rowNumber), [$row]);
     }
 
     /**
@@ -416,7 +447,7 @@ class GoogleSheetsAssessmentClient
 
     private function worksheetRange(): string
     {
-        return $this->worksheetCellsRange('A:K');
+        return $this->worksheetCellsRange('A:J');
     }
 
     private function hideInternalColumns(): void
@@ -429,7 +460,7 @@ class GoogleSheetsAssessmentClient
             $response = $this->request()
                 ->withToken($this->getAccessToken())
                 ->get($this->spreadsheetEndpoint(), [
-                    'ranges' => $this->worksheetCellsRange('J:K'),
+                    'ranges' => $this->worksheetCellsRange('I:J'),
                     'includeGridData' => 'true',
                     'fields' => 'sheets(properties(sheetId,title),data(startColumn,columnMetadata(hiddenByUser)))',
                 ]);
@@ -470,7 +501,7 @@ class GoogleSheetsAssessmentClient
             throw new GoogleSheetsException('Google Sheets worksheet was not found.');
         }
 
-        if (($hiddenColumns[9] ?? false) && ($hiddenColumns[10] ?? false)) {
+        if (($hiddenColumns[8] ?? false) && ($hiddenColumns[9] ?? false)) {
             $this->internalColumnsHidden = true;
 
             return;
@@ -485,8 +516,8 @@ class GoogleSheetsAssessmentClient
                             'range' => [
                                 'sheetId' => $sheetId,
                                 'dimension' => 'COLUMNS',
-                                'startIndex' => 9,
-                                'endIndex' => 11,
+                                'startIndex' => 8,
+                                'endIndex' => 10,
                             ],
                             'properties' => ['hiddenByUser' => true],
                             'fields' => 'hiddenByUser',

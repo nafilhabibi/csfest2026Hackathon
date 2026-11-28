@@ -109,7 +109,7 @@
                             id="prototype"
                             name="prototype"
                             type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,.ppt,.pptx"
+                            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf,.ppt,.pptx,.pdf"
                             aria-describedby="prototype-help prototype-status"
                             @required(! $submission)
                         >
@@ -117,7 +117,7 @@
                             <span class="submission-file-icon" aria-hidden="true">＋</span>
                             <span>
                                 <strong>{{ $submission ? 'Pilih file baru untuk mengganti prototype' : 'Pilih gambar, video, atau presentasi prototype' }}</strong>
-                                <small>JPG, PNG, WEBP, GIF · MP4, MOV, WEBM · PPT, PPTX</small>
+                                <small>JPG, PNG, WEBP, GIF · MP4, MOV, WEBM · PPT, PPTX, PDF</small>
                             </span>
                         </label>
                         <p class="submission-file-help" id="prototype-help">Pilih satu file. Nama dan pratinjau gambar akan muncul setelah file dipilih.</p>
@@ -178,7 +178,7 @@
                     <ul>
                         <li>Tautan GitHub bisa dibuka panitia.</li>
                         <li>Prototype menunjukkan alur utama solusi tim.</li>
-                        <li>File gambar maksimal 5 MB, video maksimal 30 MB.</li>
+                        <li>File gambar maksimal 5 MB, video dan presentasi maksimal 30 MB.</li>
                     </ul>
                 </section>
 

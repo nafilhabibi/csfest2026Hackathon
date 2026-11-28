@@ -93,7 +93,7 @@ class SubmissionController extends Controller
             ->first();
         $existingSubmission = $existingRecord !== null ? (array) $existingRecord : null;
         $prototypeFile = $request->file('prototype');
-        $maximumFileSize = $prototypeFile !== null
+        $maximumFileSize = $prototypeFile?->isValid()
             && str_starts_with((string) $prototypeFile->getMimeType(), 'image/')
                 ? 5120
                 : 30720;
@@ -129,6 +129,7 @@ class SubmissionController extends Controller
                     'video/webm',
                     'application/vnd.ms-powerpoint',
                     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'application/pdf',
                 ])->max($maximumFileSize),
             ],
             'another' => ['nullable', 'string', 'max:5000'],
@@ -136,6 +137,7 @@ class SubmissionController extends Controller
             'prototype.required' => 'Upload gambar, video, atau presentasi prototype.',
             'prototype.max' => 'Ukuran prototype melebihi batas untuk jenis file tersebut.',
             'prototype.file' => 'Prototype harus berupa file gambar, video, atau presentasi yang valid.',
+            'prototype.uploaded' => 'Batas upload server menolak file ini sebelum diproses. Hubungi panitia jika ukuran file masih di bawah batas yang ditampilkan.',
         ]);
 
         $prototypePath = $existingSubmission['prototype_path'] ?? null;
@@ -233,6 +235,7 @@ class SubmissionController extends Controller
             'video/webm' => 'webm',
             'application/vnd.ms-powerpoint' => 'ppt',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'application/pdf' => 'pdf',
             default => null,
         };
     }
